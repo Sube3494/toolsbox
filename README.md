@@ -50,6 +50,10 @@
 │           ├── textCompare.js
 │           ├── textCompare.wxml
 │           └── textCompare.wxss
+│       └── fileCompression  // 文件压缩工具
+│           ├── fileCompression.js
+│           ├── fileCompression.wxml
+│           └── fileCompression.wxss
 ├── project.config.json     // 项目配置文件
 └── sitemap.json            // 小程序索引配置
 ```
@@ -191,8 +195,9 @@
 ## 更新日志
 
 ### 2025-03-21
-- 将工具图标改为使用本地文件，不再使用网络链接
+- 将工具图标改为使用本地SVG文件，不再使用网络链接
 - 添加images/icons目录用于存放工具图标
+- 为每个工具创建独特的SVG图标，提升用户界面美观度
 - 优化下载功能，修复了下载按钮绑定错误的问题
 
 ## 错误排查

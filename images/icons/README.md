@@ -4,28 +4,30 @@
 
 ## 使用说明
 
-1. 请在此目录中添加名为`default_icon.png`的默认图标文件
-2. 如需为每个工具使用不同图标，请按下方列表添加相应文件
+1. 已经添加了所有工具的SVG图标文件
+2. 所有图标已正确配置在index.js中
 
 ## 图标文件列表
 
-请将以下PNG格式图标文件放置在此目录中：
+目录中包含以下SVG格式图标文件：
 
-1. `default_icon.png` - 默认通用图标（必需）
-2. `imageToExcel.png` - 图片转Excel工具图标（可选）
-3. `imageToPdf.png` - 图片转PDF工具图标（可选）
-4. `pdfToWord.png` - PDF转Word工具图标（可选）
-5. `textCompare.png` - 文本比较工具图标（可选）
-6. `fileCompression.png` - 文件压缩工具图标（可选）
+1. `tool_icon.svg` - 通用图标模板
+2. `imageToExcel.svg` - 图片转Excel工具图标
+3. `imageToPdf.svg` - 图片转PDF工具图标
+4. `pdfToWord.svg` - PDF转Word工具图标
+5. `textCompare.svg` - 文本比较工具图标
+6. `fileCompression.svg` - 文件压缩工具图标
 
-如果要为每个工具使用不同图标，请修改`pages/index/index.js`文件中的图标路径：
+## 如何修改图标
+
+如需修改图标，请使用SVG格式替换对应文件，并确保在`pages/index/index.js`中正确引用：
 
 ```javascript
 tools: [
     {
         id: 'imageToExcel',
         name: '图片转Excel',
-        icon: '/images/icons/imageToExcel.png', // 修改为对应工具的图标
+        icon: '/images/icons/imageToExcel.svg', // SVG图标路径
         ...
     },
     ...
@@ -34,7 +36,7 @@ tools: [
 
 ## 图标要求
 
-- 文件格式：PNG
-- 尺寸：建议使用128x128像素
-- 背景：最好使用透明背景
+- 文件格式：SVG
+- 尺寸：使用viewBox="0 0 24 24"确保一致比例
+- 背景：使用透明背景
 - 风格：保持一致的设计风格 
