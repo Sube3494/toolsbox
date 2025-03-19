@@ -5,24 +5,27 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  min-height: 100vh;
+  background-color: #f6f6f6;
 }
 
 .header {
   width: 100%;
   padding: 40rpx 0;
   text-align: center;
+  margin-bottom: 40rpx;
 }
 
 .title {
   font-size: 48rpx;
   font-weight: bold;
   color: #333;
+  margin-bottom: 10rpx;
 }
 
 .subtitle {
   font-size: 28rpx;
-  color: #999;
-  margin-top: 10rpx;
+  color: #888;
 }
 
 .tools-list {
@@ -42,6 +45,17 @@
   width: 100%;
   box-sizing: border-box;
   border-radius: 12rpx;
+  background-color: #fff;
+  border-radius: 16rpx;
+  margin-bottom: 30rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.tool-item:active {
+  transform: scale(0.98);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
 }
 
 .tool-content {
@@ -61,12 +75,14 @@
 .tool-info {
   display: flex;
   flex-direction: column;
+  flex: 1;
 }
 
 .tool-name {
   font-size: 32rpx;
   font-weight: 500;
   color: #333;
+  margin-bottom: 10rpx;
 }
 
 .tool-desc {
@@ -167,4 +183,80 @@
 .use-count {
   font-size: 22rpx;
   color: #aaa;
+}
+
+/* 加载状态 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+}
+
+.loading-spinner {
+  width: 80rpx;
+  height: 80rpx;
+  border: 8rpx solid #f3f3f3;
+  border-top: 8rpx solid #3498db;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 30rpx;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+.loading-text {
+  font-size: 32rpx;
+  color: #666;
+}
+
+/* 错误提示 */
+.error-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  width: 100%;
+  padding: 0 30rpx;
+}
+
+.error-message {
+  font-size: 32rpx;
+  color: #666;
+  text-align: center;
+  margin: 30rpx 0;
+}
+
+.retry-button {
+  background-color: #3498db;
+  color: white;
+  padding: 20rpx 40rpx;
+  border-radius: 10rpx;
+  font-size: 28rpx;
+  margin-top: 20rpx;
+}
+
+/* 网络状态提示 */
+.network-status {
+  font-size: 24rpx;
+  color: #999;
+  text-align: center;
+  padding: 20rpx;
+  margin-top: 20rpx;
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
 }

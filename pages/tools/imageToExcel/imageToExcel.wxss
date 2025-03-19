@@ -160,3 +160,51 @@
   line-height: 1.6;
   word-break: break-all;
 }
+
+/* 网络警告样式 */
+.network-warning {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 10rpx 20rpx;
+  text-align: center;
+  font-size: 28rpx;
+  width: 100%;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 999;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+/* 重试按钮样式 */
+.retry-button {
+  margin-top: 20rpx;
+  background-color: #f0ad4e;
+  color: white;
+}
+
+.retry-button[disabled] {
+  background-color: #f8d9a6;
+  color: #d9d9d9;
+}
+
+/* 网络状态显示 */
+.footer {
+  margin-top: 40rpx;
+  padding: 20rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #999;
+}
+
+.network-status {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  color: #666;
+}
+
+.tips {
+  display: block;
+  margin-bottom: 10rpx;
+}

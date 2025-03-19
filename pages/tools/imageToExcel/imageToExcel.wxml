@@ -1,4 +1,7 @@
 <!-- pages/tools/imageToExcel/imageToExcel.wxml -->
+<view wx:if="{{networkType === 'none'}}" class="network-warning">
+  <text>网络连接已断开，请检查网络设置</text>
+</view>
 <view class="container">
   <view class="header">
     <view class="title">图片转Excel</view>
@@ -14,8 +17,11 @@
       <button class="btn-primary choose-button" bindtap="chooseImage">
         {{imageLoaded ? '重新选择图片' : '选择图片'}}
       </button>
-      <button class="btn-primary process-button" bindtap="processImage" disabled="{{!imageLoaded || processing}}" loading="{{processing}}">
-        开始处理
+      <button class="btn-primary process-button" bindtap="processImage" disabled="{{!imageLoaded || processing || networkType === 'none'}}" loading="{{processing}}">
+        {{processing ? '处理中...' : '开始处理'}}
+      </button>
+      <button wx:if="{{errorMsg && errorMsg.includes('502')}}" class="retry-button" bindtap="retryConnection" disabled="{{processing || networkType === 'none'}}">
+        重试连接 ({{retryCount}}/{{maxRetries}})
       </button>
     </view>
     <view class="result-container" wx:if="{{result}}">
@@ -57,5 +63,10 @@
       <view>小程序版本: 当前</view>
       <view>网络状态: {{networkType || '未知'}}</view>
     </view>
+  </view>
+  <!-- 底部提示 -->
+  <view class="footer">
+    <text class="tips">支持识别各种表格图片，包括学生成绩单、财务报表等</text>
+    <text wx:if="{{networkType !== 'none'}}" class="network-status">当前网络: {{networkType}}</text>
   </view>
 </view>

@@ -5,6 +5,7 @@
         "pages/tools/imageToPdf/imageToPdf",
         "pages/tools/pdfToWord/pdfToWord",
         "pages/tools/textCompare/textCompare",
+        "pages/tools/fileCompression/fileCompression",
         "pages/webview/webview"
     ],
     "window": {
@@ -16,17 +17,25 @@
     "style": "v2",
     "sitemapLocation": "sitemap.json",
     "requiredPrivateInfos": [
+        "chooseAddress",
+        "chooseLocation",
+        "choosePoi",
         "getLocation",
         "onLocationChange",
+        "startLocationUpdate",
         "startLocationUpdateBackground"
     ],
     "permission": {
         "scope.userLocation": {
             "desc": "您的位置信息将用于获取本地服务"
+        },
+        "scope.writePhotosAlbum": {
+            "desc": "保存生成的文件到您的相册中"
         }
     },
     "networkTimeout": {
         "request": 10000,
         "downloadFile": 60000
-    }
+    },
+    "lazyCodeLoading": "requiredComponents"
 }

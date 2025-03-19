@@ -15,6 +15,14 @@ from pdf2docx import Converter
 import difflib
 import json
 import base64
+import zipfile
+import py7zr
+import shutil
+import datetime
+import re
+import string
+import sys
+import hashlib
 
 app = Flask(__name__)
 CORS(app)
@@ -22,7 +30,7 @@ CORS(app)
 # 配置文件上传
 UPLOAD_FOLDER = 'uploads'
 OUTPUT_FOLDER = 'outputs'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'pdf', 'docx', 'xlsx', 'txt', 'zip', '7z'}
 MAX_CONTENT_LENGTH = 20 * 1024 * 1024  # 20MB
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -34,6 +42,9 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 # 存储上传的图片信息
 uploads = {}
+
+# 存储上传的文件信息
+compression_files = {}
 
 # 初始化OCR模型
 ocr = PaddleOCR(use_angle_cls=True, lang="ch", use_gpu=False)
@@ -145,45 +156,51 @@ def image_to_excel():
 # =============== 图片转PDF功能 ===============
 
 @app.route('/image-to-pdf-upload', methods=['POST'])
-def upload_image():
+def upload_image_for_pdf():
     try:
         if 'image' not in request.files:
-            return jsonify({'success': False, 'message': '未找到图片'}), 400
+            response = jsonify({'success': False, 'message': '没有上传图片'})
+            response.headers['Content-Type'] = 'application/json'
+            return response, 400
         
-        file = request.files['image']
-        if file.filename == '':
-            return jsonify({'success': False, 'message': '未选择文件'}), 400
+        image_file = request.files['image']
+        if not image_file or not image_file.filename:
+            response = jsonify({'success': False, 'message': '无效的图片文件'})
+            response.headers['Content-Type'] = 'application/json'
+            return response, 400
         
-        if file and allowed_file(file.filename):
-            # 生成唯一ID和安全文件名
-            image_id = f"{int(time.time())}-{uuid.uuid4().hex[:8]}"
-            filename = secure_filename(file.filename)
-            index = int(request.form.get('index', 0))
-            
-            # 保存文件路径
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{image_id}_{filename}")
-            file.save(file_path)
-            
-            # 存储图片信息
-            uploads[image_id] = {
-                'path': file_path,
-                'index': index
+        # 安全处理文件名
+        original_filename = image_file.filename
+        filename = secure_filename(original_filename)
+        
+        # 创建唯一的文件名避免冲突
+        timestamp = int(time.time())
+        unique_filename = f"{timestamp}_{filename}"
+        
+        # 保存图片文件
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        image_file.save(filepath)
+        
+        # 返回成功响应
+        result = {
+            'success': True,
+            'data': {
+                'originalFilename': original_filename,
+                'filename': unique_filename,
+                'url': f"https://excel.sube.top/uploads/{unique_filename}"
             }
-            
-            return jsonify({
-                'success': True,
-                'data': {
-                    'imageId': image_id,
-                    'fileName': filename,
-                    'size': os.path.getsize(file_path)
-                }
-            })
+        }
         
-        return jsonify({'success': False, 'message': '不支持的文件类型'}), 400
+        response = jsonify(result)
+        response.headers['Content-Type'] = 'application/json'
+        return response
     
     except Exception as e:
-        print(f"上传图片错误: {str(e)}")
-        return jsonify({'success': False, 'message': '服务器错误'}), 500
+        error_message = f"上传图片失败: {str(e)}"
+        print(error_message)
+        response = jsonify({'success': False, 'message': error_message})
+        response.headers['Content-Type'] = 'application/json'
+        return response, 500
 
 @app.route('/merge-pdf', methods=['POST'])
 def merge_pdf():
@@ -192,17 +209,40 @@ def merge_pdf():
         image_ids = data.get('imageIds', [])
         
         if not image_ids or not isinstance(image_ids, list) or len(image_ids) == 0:
-            return jsonify({'success': False, 'message': '图片ID无效'}), 400
+            response = jsonify({'success': False, 'message': '图片ID或文件名无效'})
+            response.headers['Content-Type'] = 'application/json'
+            return response, 400
         
-        # 按索引排序图片
+        # 尝试两种方式查找图片：
+        # 1. 通过uploads字典中的ID（旧方法）
+        # 2. 通过文件名直接查找（新方法）
         images = []
+        
+        # 首先尝试通过uploads字典查找
         for img_id in image_ids:
             if img_id in uploads:
-                images.append({'id': img_id, **uploads[img_id]})
+                images.append({'id': img_id, 'path': uploads[img_id]['path'], 'index': uploads[img_id]['index']})
+                
+        # 如果没有找到图片，尝试通过文件名查找
+        if not images:
+            print("通过uploads字典未找到图片，尝试通过文件名查找")
+            for filename in image_ids:
+                # 检查是否是文件名
+                if isinstance(filename, str) and ('.' in filename):
+                    # 构建完整路径
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                    # 检查文件是否存在
+                    if os.path.exists(file_path):
+                        # 根据字符串在列表中的位置确定索引
+                        index = image_ids.index(filename)
+                        images.append({'id': f"file-{index}", 'path': file_path, 'index': index})
         
         if not images:
-            return jsonify({'success': False, 'message': '未找到有效图片'}), 400
+            response = jsonify({'success': False, 'message': '未找到有效图片'})
+            response.headers['Content-Type'] = 'application/json'
+            return response, 400
         
+        # 按索引排序图片
         images.sort(key=lambda x: x['index'])
         
         # 生成PDF
@@ -217,22 +257,27 @@ def merge_pdf():
             img_path = img_info['path']
             temp_pdf = BytesIO()
             
-            # 打开图片
-            image = Image.open(img_path)
-            
-            # 确定PDF页面大小
-            width, height = image.size
-            
-            # 创建一个PDF页面
-            c = canvas.Canvas(temp_pdf, pagesize=(width, height))
-            c.drawImage(img_path, 0, 0, width, height)
-            c.save()
-            
-            # 将BytesIO重置到开始位置
-            temp_pdf.seek(0)
-            
-            # 将这个页面添加到合并器
-            merger.append(temp_pdf)
+            try:
+                # 打开图片
+                image = Image.open(img_path)
+                
+                # 确定PDF页面大小
+                width, height = image.size
+                
+                # 创建一个PDF页面
+                c = canvas.Canvas(temp_pdf, pagesize=(width, height))
+                c.drawImage(img_path, 0, 0, width, height)
+                c.save()
+                
+                # 将BytesIO重置到开始位置
+                temp_pdf.seek(0)
+                
+                # 将这个页面添加到合并器
+                merger.append(temp_pdf)
+            except Exception as e:
+                print(f"处理图片出错: {str(e)}")
+                # 继续处理下一张图片
+                continue
         
         # 写入合并后的PDF
         merger.write(pdf_path)
@@ -245,25 +290,35 @@ def merge_pdf():
         # 构建PDF下载URL
         pdf_url = f"https://excel.sube.top/download/{pdf_name}"
         
-        # 清理上传的图片
+        # 清理上传的图片（仅删除通过uploads字典找到的图片）
         for img_info in images:
-            try:
-                os.remove(img_info['path'])
-                del uploads[img_info['id']]
-            except Exception as e:
-                print(f"清理图片失败: {str(e)}")
+            if 'id' in img_info and img_info['id'] in uploads:
+                try:
+                    os.remove(img_info['path'])
+                    del uploads[img_info['id']]
+                except Exception as e:
+                    print(f"清理图片失败: {str(e)}")
+                    # 继续处理，不中断流程
         
-        return jsonify({
+        # 返回结果
+        result = {
             'success': True,
             'data': {
                 'pdfUrl': pdf_url,
-                'fileSize': f"{file_size_kb}KB"
+                'fileSize': f"{file_size_kb} KB"
             }
-        })
-    
+        }
+        
+        response = jsonify(result)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+        
     except Exception as e:
-        print(f"生成PDF错误: {str(e)}")
-        return jsonify({'success': False, 'message': f'服务器错误: {str(e)}'}), 500
+        error_msg = f"合并PDF失败: {str(e)}"
+        print(error_msg)
+        response = jsonify({'success': False, 'message': error_msg})
+        response.headers['Content-Type'] = 'application/json'
+        return response, 500
 
 # =============== PDF转Word功能 ===============
 
@@ -323,11 +378,60 @@ def pdf_to_word():
         except:
             pass
 
-# =============== 通用下载功能 ===============
+# =============== 文件下载功能 ===============
 
 @app.route('/download/<filename>', methods=['GET'])
 def download_file(filename):
-    return send_from_directory(app.config['OUTPUT_FOLDER'], filename)
+    try:
+        # 检查文件是否存在
+        file_path = os.path.join(app.config['OUTPUT_FOLDER'], filename)
+        if not os.path.exists(file_path):
+            response = jsonify({
+                'success': False,
+                'message': '文件不存在'
+            })
+            response.headers['Content-Type'] = 'application/json'
+            return response, 404
+        
+        # 根据文件类型设置Content-Type
+        mime_types = {
+            '.pdf': 'application/pdf',
+            '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            '.zip': 'application/zip',
+            '.7z': 'application/x-7z-compressed',
+            '.html': 'text/html',
+            '.txt': 'text/plain',
+            '.jpg': 'image/jpeg',
+            '.jpeg': 'image/jpeg',
+            '.png': 'image/png',
+            '.gif': 'image/gif'
+        }
+        
+        # 获取文件扩展名
+        file_ext = os.path.splitext(filename)[1].lower()
+        content_type = mime_types.get(file_ext, 'application/octet-stream')
+        
+        # 发送文件并设置正确的Content-Type
+        response = send_from_directory(
+            app.config['OUTPUT_FOLDER'], 
+            filename, 
+            as_attachment=True
+        )
+        response.headers['Content-Type'] = content_type
+        response.headers['Content-Disposition'] = f'attachment; filename="{filename}"'
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        return response
+        
+    except Exception as e:
+        error_msg = f"下载文件失败: {str(e)}"
+        print(error_msg)
+        response = jsonify({
+            'success': False,
+            'message': error_msg
+        })
+        response.headers['Content-Type'] = 'application/json'
+        return response, 500
 
 # =============== 文本比较功能 ===============
 
@@ -337,7 +441,9 @@ def compare_text():
         # 获取请求中的文本
         data = request.json
         if not data or 'text1' not in data or 'text2' not in data:
-            return jsonify({'success': False, 'message': '请提供两段要比较的文本'}), 400
+            response = jsonify({'success': False, 'message': '请提供两段要比较的文本'})
+            response.headers['Content-Type'] = 'application/json'
+            return response, 400
         
         text1 = data['text1']
         text2 = data['text2']
@@ -712,7 +818,7 @@ def compare_text():
         html_url = f"https://excel.sube.top/download/{html_name}"
         
         # 返回结果
-        return jsonify({
+        result = {
             'success': True,
             'data': {
                 'similarity': similarity,
@@ -722,10 +828,251 @@ def compare_text():
                 'total_chars': total_chars,
                 'resultUrl': html_url
             }
-        })
+        }
+        
+        response = jsonify(result)
+        response.headers['Content-Type'] = 'application/json'
+        return response
         
     except Exception as e:
-        return jsonify({'success': False, 'message': f'比较失败: {str(e)}'}), 500
+        error_msg = f"比较失败: {str(e)}"
+        print(error_msg)
+        response = jsonify({'success': False, 'message': error_msg})
+        response.headers['Content-Type'] = 'application/json'
+        return response, 500
+
+# =============== 文件压缩功能 ===============
+
+@app.route('/upload-file', methods=['POST'])
+def upload_file():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'message': '未找到文件'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'message': '未选择文件'}), 400
+        
+        # 获取文件索引和原始文件名
+        index = int(request.form.get('index', 0))
+        original_filename = request.form.get('fileName', file.filename)
+        
+        # 生成唯一ID
+        file_id = f"{int(time.time())}-{uuid.uuid4().hex[:8]}"
+        
+        # 安全处理文件名
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{file_id}_{filename}")
+        
+        # 保存文件
+        file.save(file_path)
+        
+        # 存储文件信息
+        compression_files[file_id] = {
+            'path': file_path,
+            'originalName': original_filename,
+            'index': index
+        }
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'fileId': file_id,
+                'fileName': original_filename,
+                'size': os.path.getsize(file_path)
+            }
+        })
+    
+    except Exception as e:
+        print(f"上传文件错误: {str(e)}")
+        return jsonify({'success': False, 'message': '服务器错误'}), 500
+
+@app.route('/compress', methods=['POST'])
+def compress_files():
+    try:
+        data = request.json
+        format_type = data.get('format', 'zip')
+        
+        if not compression_files:
+            return jsonify({'success': False, 'message': '未找到有效文件'}), 400
+        
+        # 创建临时目录存放文件
+        temp_dir = os.path.join(app.config['UPLOAD_FOLDER'], f"temp_{int(time.time())}")
+        os.makedirs(temp_dir, exist_ok=True)
+        
+        # 复制文件到临时目录，保持原来的文件名
+        file_list = []
+        for file_id, file_info in compression_files.items():
+            src_path = file_info['path']
+            dst_name = file_info['originalName']
+            dst_path = os.path.join(temp_dir, dst_name)
+            
+            # 如果有重名，则添加序号
+            if os.path.exists(dst_path):
+                name_parts = os.path.splitext(dst_name)
+                dst_name = f"{name_parts[0]}_{file_id[-4:]}{name_parts[1]}"
+                dst_path = os.path.join(temp_dir, dst_name)
+            
+            shutil.copy2(src_path, dst_path)
+            file_list.append({'name': dst_name, 'path': dst_path})
+        
+        # 生成压缩文件名
+        timestamp = int(time.time())
+        archive_name = f"files_{timestamp}"
+        
+        if format_type == 'zip':
+            # 创建ZIP文件
+            archive_path = os.path.join(app.config['OUTPUT_FOLDER'], f"{archive_name}.zip")
+            with zipfile.ZipFile(archive_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for file_item in file_list:
+                    zipf.write(file_item['path'], arcname=file_item['name'])
+            
+            file_extension = 'zip'
+        else:
+            # 创建7Z文件
+            archive_path = os.path.join(app.config['OUTPUT_FOLDER'], f"{archive_name}.7z")
+            with py7zr.SevenZipFile(archive_path, 'w') as szf:
+                for file_item in file_list:
+                    szf.write(file_item['path'], arcname=file_item['name'])
+            
+            file_extension = '7z'
+        
+        # 清理临时目录
+        shutil.rmtree(temp_dir, ignore_errors=True)
+        
+        # 清理上传的文件
+        for file_id, file_info in compression_files.items():
+            try:
+                os.remove(file_info['path'])
+            except:
+                pass
+        
+        # 清空文件列表
+        compression_files.clear()
+        
+        # 计算文件大小
+        file_size = os.path.getsize(archive_path)
+        file_size_kb = round(file_size / 1024, 2)
+        
+        if file_size_kb < 1024:
+            file_size_str = f"{file_size_kb} KB"
+        else:
+            file_size_str = f"{round(file_size_kb / 1024, 2)} MB"
+        
+        # 构建下载URL
+        file_url = f"https://excel.sube.top/download/{archive_name}.{file_extension}"
+        
+        return jsonify({
+            'success': True,
+            'data': {
+                'fileSize': file_size_str,
+                'fileName': f"{archive_name}.{file_extension}",
+                'fileUrl': file_url
+            }
+        })
+    
+    except Exception as e:
+        print(f"压缩文件错误: {str(e)}")
+        return jsonify({'success': False, 'message': f'压缩失败: {str(e)}'}), 500
+
+# =============== 根据URL合并PDF功能 ===============
+
+@app.route('/urls-to-pdf', methods=['POST'])
+def urls_to_pdf():
+    try:
+        # 获取请求数据
+        data = request.json
+        image_urls = data.get('imageUrls', [])
+        
+        if not image_urls or not isinstance(image_urls, list) or len(image_urls) == 0:
+            response = jsonify({'success': False, 'message': '图片URL无效'})
+            response.headers['Content-Type'] = 'application/json'
+            return response, 400
+        
+        # 准备图片路径列表
+        image_paths = []
+        for url in image_urls:
+            # 从URL中提取文件名
+            filename = url.split('/')[-1]
+            if not filename:
+                continue
+                
+            # 构建本地路径
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            
+            # 检查文件是否存在
+            if os.path.exists(file_path):
+                image_paths.append({'path': file_path, 'filename': filename})
+        
+        if not image_paths:
+            response = jsonify({'success': False, 'message': '未找到有效图片文件'})
+            response.headers['Content-Type'] = 'application/json'
+            return response, 400
+        
+        # 生成PDF
+        pdf_name = f"pdf-{int(time.time())}.pdf"
+        pdf_path = os.path.join(app.config['OUTPUT_FOLDER'], pdf_name)
+        
+        # 使用PdfMerger合并所有图片生成的PDF
+        merger = PdfMerger()
+        
+        for img_info in image_paths:
+            # 将图片转换为PDF
+            img_path = img_info['path']
+            temp_pdf = BytesIO()
+            
+            try:
+                # 打开图片
+                image = Image.open(img_path)
+                
+                # 确定PDF页面大小
+                width, height = image.size
+                
+                # 创建一个PDF页面
+                c = canvas.Canvas(temp_pdf, pagesize=(width, height))
+                c.drawImage(img_path, 0, 0, width, height)
+                c.save()
+                
+                # 将BytesIO重置到开始位置
+                temp_pdf.seek(0)
+                
+                # 将这个页面添加到合并器
+                merger.append(temp_pdf)
+            except Exception as e:
+                print(f"处理图片出错: {str(e)}")
+                # 继续处理下一张图片
+                continue
+        
+        # 写入合并后的PDF
+        merger.write(pdf_path)
+        merger.close()
+        
+        # 计算文件大小
+        file_size = os.path.getsize(pdf_path)
+        file_size_kb = round(file_size / 1024, 2)
+        
+        # 构建PDF下载URL
+        pdf_url = f"https://excel.sube.top/download/{pdf_name}"
+        
+        # 返回结果
+        result = {
+            'success': True,
+            'data': {
+                'pdfUrl': pdf_url,
+                'fileSize': f"{file_size_kb} KB"
+            }
+        }
+        
+        response = jsonify(result)
+        response.headers['Content-Type'] = 'application/json'
+        return response
+        
+    except Exception as e:
+        error_msg = f"根据URL合并PDF失败: {str(e)}"
+        print(error_msg)
+        response = jsonify({'success': False, 'message': error_msg})
+        response.headers['Content-Type'] = 'application/json'
+        return response, 500
 
 # =============== 启动服务 ===============
 

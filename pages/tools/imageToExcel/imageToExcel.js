@@ -7,7 +7,9 @@ Page({
     errorMsg: '',
     isIOS: false,
     isAndroid: false,
-    networkType: ''
+    networkType: '',
+    retryCount: 0,  // 添加重试计数
+    maxRetries: 3   // 最大重试次数
   },
 
   onLoad: function () {
@@ -18,14 +20,90 @@ Page({
       isAndroid: systemInfo.platform === 'android'
     });
 
-    // 获取网络状态
+    // 获取初始网络状态
+    this.getNetworkStatus();
+
+    // 开始监听网络状态
+    this.startNetworkMonitoring();
+  },
+
+  onShow: function () {
+    // 页面显示时，再次获取网络状态
+    this.getNetworkStatus();
+
+    // 如果之前没有启动网络监听，则启动
+    if (!this.networkChangeListenerStarted) {
+      this.startNetworkMonitoring();
+    }
+  },
+
+  onHide: function () {
+    // 页面隐藏时，可以选择停止网络监听
+    // this.stopNetworkMonitoring();
+  },
+
+  onUnload: function () {
+    // 页面卸载时，停止网络监听
+    this.stopNetworkMonitoring();
+  },
+
+  // 获取网络状态
+  getNetworkStatus: function () {
     wx.getNetworkType({
       success: (res) => {
         this.setData({
           networkType: res.networkType
         });
+
+        // 如果无网络，显示提示
+        if (res.networkType === 'none') {
+          wx.showToast({
+            title: '当前无网络连接',
+            icon: 'none',
+            duration: 2000
+          });
+        }
       }
     });
+  },
+
+  // 开始监听网络变化
+  startNetworkMonitoring: function () {
+    // 避免重复监听
+    if (this.networkChangeListenerStarted) {
+      return;
+    }
+
+    // 监听网络状态变化
+    wx.onNetworkStatusChange((res) => {
+      this.setData({
+        networkType: res.networkType
+      });
+
+      if (res.networkType === 'none') {
+        wx.showToast({
+          title: '网络连接已断开',
+          icon: 'none',
+          duration: 2000
+        });
+      } else {
+        wx.showToast({
+          title: '网络已连接',
+          icon: 'success',
+          duration: 1000
+        });
+      }
+    });
+
+    this.networkChangeListenerStarted = true;
+  },
+
+  // 停止监听网络变化
+  stopNetworkMonitoring: function () {
+    if (this.networkChangeListenerStarted) {
+      wx.offNetworkStatusChange();
+      this.networkChangeListenerStarted = false;
+    }
   },
 
   // 选择图片
@@ -49,55 +127,192 @@ Page({
     });
   },
 
-  // 识别图片并转换
-  processImage: function () {
-    if (!this.data.imageLoaded) {
-      this.setData({
-        errorMsg: '请先选择图片'
+  // 处理图片
+  processImage: function (isRetry = false) {
+    if (!this.data.imagePath) {
+      wx.showToast({
+        title: '请先选择图片',
+        icon: 'none'
       });
       return;
     }
 
-    this.setData({
-      processing: true,
-      errorMsg: ''
-    });
+    // 检查网络状态
+    if (this.data.networkType === 'none') {
+      this.setData({
+        errorMsg: '当前无网络连接，请检查网络设置'
+      });
+      wx.showToast({
+        title: '无网络连接',
+        icon: 'none',
+        duration: 2000
+      });
+      return;
+    }
 
+    const that = this;
+
+    // 如果是重试，显示重试信息
+    if (isRetry) {
+      this.setData({
+        retryCount: this.data.retryCount + 1,
+        processing: true,
+        errorMsg: `正在重试 (${this.data.retryCount + 1}/${this.data.maxRetries})...`
+      });
+
+      // 短暂延迟，给服务器一些恢复时间
+      setTimeout(() => {
+        this.doProcessImage();
+      }, 1500);
+    } else {
+      // 首次尝试
+      this.setData({
+        processing: true,
+        errorMsg: '',
+        result: null,
+        retryCount: 0
+      });
+
+      this.doProcessImage();
+    }
+  },
+
+  // 实际执行上传处理
+  doProcessImage: function () {
     const that = this;
 
     // 上传图片到服务器处理
     wx.uploadFile({
-      url: 'https://excel.sube.top/image-to-excel', // 修改为您的实际API地址
+      url: 'https://excel.sube.top/image-to-excel',
       filePath: this.data.imagePath,
       name: 'image',
-      success: function (res) {
-        console.log('服务器返回:', res.data); // 调试信息
+      success: (res) => {
+        console.log("上传响应:", res);
+
+        // 检查HTTP状态码
+        if (res.statusCode !== 200) {
+          let errorMsg = '';
+          let canRetry = false;
+
+          // 对特定错误进行处理
+          if (res.statusCode === 502) {
+            errorMsg = '服务器暂时不可用(502)，请稍后重试';
+            console.error('服务器返回502错误');
+            canRetry = true;  // 502错误可以重试
+          } else {
+            errorMsg = `服务器返回错误(${res.statusCode})`;
+          }
+
+          // 如果是HTML格式的错误响应，不尝试解析
+          if (typeof res.data === 'string' && res.data.trim().startsWith('<')) {
+            console.error(`收到HTML错误响应:`, res.data.substring(0, 100) + '...');
+          }
+
+          // 检查是否可以重试
+          if (canRetry && this.data.retryCount < this.data.maxRetries) {
+            // 显示重试提示
+            wx.showModal({
+              title: '服务器暂时不可用',
+              content: `是否重试？(${this.data.retryCount + 1}/${this.data.maxRetries})`,
+              confirmText: '重试',
+              cancelText: '取消',
+              success: (result) => {
+                if (result.confirm) {
+                  // 用户选择重试
+                  console.log('用户选择重试上传');
+                  this.processImage(true);  // 传入重试标志
+                } else {
+                  // 用户取消重试
+                  that.setData({
+                    processing: false,
+                    errorMsg: errorMsg
+                  });
+                }
+              }
+            });
+            return;
+          }
+
+          that.setData({
+            processing: false,
+            errorMsg: errorMsg
+          });
+          return;
+        }
+
+        // 重置重试计数
+        that.setData({
+          retryCount: 0
+        });
+
         try {
-          const result = JSON.parse(res.data);
+          // 判断返回的数据类型
+          console.log("响应数据类型:", typeof res.data);
+          console.log("响应数据:", res.data);
+
+          let result;
+          if (typeof res.data === 'string') {
+            // 检查是否为JSON格式
+            if (res.data.trim().startsWith('{') || res.data.trim().startsWith('[')) {
+              result = JSON.parse(res.data);
+            } else {
+              console.error("非JSON格式响应:", res.data);
+              that.setData({
+                processing: false,
+                errorMsg: '服务器返回了非JSON格式的数据'
+              });
+              return;
+            }
+          } else {
+            result = res.data;
+          }
+
           if (result.success) {
             that.setData({
               result: result.data,
-              processing: false
+              processing: false,
+              errorMsg: ''
             });
           } else {
             that.setData({
-              errorMsg: result.message || '处理失败',
-              processing: false
+              processing: false,
+              errorMsg: result.message || '处理失败'
             });
           }
         } catch (e) {
-          console.error('解析错误:', e, res.data);
+          console.error("解析响应数据出错:", e);
+          console.error("原始响应数据:", res.data);
+
+          // 尝试截取部分数据展示，避免过长
+          let previewData = typeof res.data === 'string'
+            ? (res.data.length > 500 ? res.data.substring(0, 500) + '...' : res.data)
+            : '非字符串数据';
+          console.log('响应数据预览:', previewData);
+
           that.setData({
-            errorMsg: '返回数据格式错误，请联系管理员',
-            processing: false
+            processing: false,
+            errorMsg: '解析服务器响应失败，请稍后重试'
           });
         }
       },
-      fail: function (err) {
-        console.error('上传失败', err);
+      fail: (err) => {
+        console.error("上传请求失败:", err);
+
+        // 提供更具体的错误信息
+        let errorMsg = '网络请求失败';
+        if (err.errMsg) {
+          if (err.errMsg.includes('timeout')) {
+            errorMsg = '网络连接超时，请检查网络';
+          } else if (err.errMsg.includes('fail')) {
+            errorMsg = '网络连接失败，请检查网络设置';
+          } else if (err.errMsg.includes('domain')) {
+            errorMsg = '域名访问受限，请检查小程序配置';
+          }
+        }
+
         that.setData({
-          errorMsg: '网络错误，请重试',
-          processing: false
+          processing: false,
+          errorMsg: errorMsg
         });
       }
     });
@@ -246,5 +461,23 @@ Page({
         });
       }
     });
+  },
+
+  // 尝试重新连接
+  retryConnection: function () {
+    if (this.data.processing) {
+      return;
+    }
+
+    // 检查是否可以重试
+    if (this.data.retryCount < this.data.maxRetries) {
+      this.processImage(true);
+    } else {
+      wx.showToast({
+        title: '已达最大重试次数',
+        icon: 'none',
+        duration: 2000
+      });
+    }
   }
 }) 

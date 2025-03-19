@@ -2,7 +2,7 @@
  * @Date: 2025-03-19 19:37:56
  * @Author: Sube
  * @FilePath: index.js
- * @LastEditTime: 2025-03-19 23:12:26
+ * @LastEditTime: 2025-03-20 00:44:54
  * @Description: 
  */
 // index.js
@@ -12,42 +12,129 @@ Page({
             {
                 id: 'imageToExcel',
                 name: '图片转Excel',
-                icon: 'http://pic.sube.top/i/2025/03/19/67dab54181279.png', // 替换为实际图标URL
+                icon: '/images/icons/imageToExcel.svg', // 改为本地文件路径
                 description: '上传图片自动转换为Excel表格',
                 path: '/pages/tools/imageToExcel/imageToExcel'
             },
             {
                 id: 'imageToPdf',
                 name: '图片转PDF',
-                icon: 'http://pic.sube.top/i/2025/03/19/67dab54181279.png', // 替换为实际图标URL，这里临时使用相同图标
+                icon: '/images/icons/imageToPdf.svg', // 改为本地文件路径
                 description: '上传图片快速转换为PDF文档',
                 path: '/pages/tools/imageToPdf/imageToPdf'
             },
             {
                 id: 'pdfToWord',
                 name: 'PDF转Word',
-                icon: 'http://pic.sube.top/i/2025/03/19/67dab54181279.png', // 替换为实际图标URL，这里临时使用相同图标
+                icon: '/images/icons/pdfToWord.svg', // 改为本地文件路径
                 description: '将PDF文档转换为可编辑的Word文件',
                 path: '/pages/tools/pdfToWord/pdfToWord'
             },
             {
                 id: 'textCompare',
                 name: '文本比较工具',
-                icon: 'http://pic.sube.top/i/2025/03/19/67dab54181279.png', // 替换为实际图标URL，这里临时使用相同图标
+                icon: '/images/icons/textCompare.svg', // 改为本地文件路径
                 description: '对比两段文本，突出显示差异',
                 path: '/pages/tools/textCompare/textCompare'
+            },
+            {
+                id: 'fileCompression',
+                name: '文件压缩工具',
+                icon: '/images/icons/fileCompression.svg', // 改为本地文件路径
+                description: '压缩文件为ZIP或7Z格式',
+                path: '/pages/tools/fileCompression/fileCompression'
             }
             // 未来可以在这里添加更多工具
-        ]
+        ],
+        loading: true,
+        error: '',
+        networkType: ''
+    },
+
+    onLoad: function () {
+        try {
+            // 收集系统信息用于调试
+            const systemInfo = wx.getSystemInfoSync();
+            console.log('系统信息:', systemInfo);
+
+            // 检查网络状态
+            this.getNetworkStatus();
+        } catch (e) {
+            console.error('页面加载出错:', e);
+            this.setData({
+                loading: false,
+                error: '页面加载出错，请重试'
+            });
+        }
+    },
+
+    // 获取网络状态
+    getNetworkStatus: function () {
+        wx.getNetworkType({
+            success: (res) => {
+                this.setData({
+                    networkType: res.networkType,
+                    loading: false
+                });
+
+                if (res.networkType === 'none') {
+                    this.setData({
+                        error: '网络连接已断开，请检查网络设置'
+                    });
+                }
+            },
+            fail: (err) => {
+                console.error('获取网络状态失败:', err);
+                this.setData({
+                    loading: false,
+                    error: '网络状态检测失败'
+                });
+            }
+        });
+    },
+
+    // 重试加载
+    retryLoad: function () {
+        this.setData({
+            loading: true,
+            error: ''
+        });
+
+        this.getNetworkStatus();
     },
 
     navigateToTool: function (e) {
+        if (this.data.networkType === 'none') {
+            wx.showToast({
+                title: '无网络连接，请检查网络设置',
+                icon: 'none',
+                duration: 2000
+            });
+            return;
+        }
+
         const toolId = e.currentTarget.dataset.id;
         const tool = this.data.tools.find(item => item.id === toolId);
         if (tool) {
             wx.navigateTo({
-                url: tool.path
+                url: tool.path,
+                fail: (err) => {
+                    console.error('页面跳转失败:', err);
+                    wx.showToast({
+                        title: '页面跳转失败，请重试',
+                        icon: 'none',
+                        duration: 2000
+                    });
+                }
             });
         }
+    },
+
+    onError: function (error) {
+        console.error('小程序发生错误:', error);
+        this.setData({
+            loading: false,
+            error: '程序运行错误，请重启小程序'
+        });
     }
 }) 

@@ -1,18 +1,34 @@
 <!-- index.wxml -->
 <view class="container">
-  <view class="header">
-    <view class="title">工具箱</view>
-    <view class="subtitle">实用工具集合</view>
+  <!-- 加载中提示 -->
+  <view class="loading-container" wx:if="{{loading}}">
+    <view class="loading-spinner"></view>
+    <view class="loading-text">加载中...</view>
   </view>
-  <view class="tools-list">
-    <view class="tool-item card" wx:for="{{tools}}" wx:key="id" bindtap="navigateToTool" data-id="{{item.id}}">
-      <view class="tool-content">
-        <image class="tool-icon" src="{{item.icon}}" mode="aspectFit"></image>
-        <view class="tool-info">
-          <view class="tool-name">{{item.name}}</view>
-          <view class="tool-desc">{{item.description}}</view>
+  <!-- 错误提示 -->
+  <view class="error-container" wx:elif="{{error}}">
+    <icon type="warn" size="64" color="#FF5252"></icon>
+    <view class="error-message">{{error}}</view>
+    <button bindtap="retryLoad" class="retry-button">重新加载</button>
+  </view>
+  <!-- 正常内容 -->
+  <block wx:else>
+    <view class="header">
+      <view class="title">工具箱</view>
+      <view class="subtitle">实用工具集合</view>
+    </view>
+    <view class="tools-list">
+      <view class="tool-item card" wx:for="{{tools}}" wx:key="id" bindtap="navigateToTool" data-id="{{item.id}}">
+        <view class="tool-content">
+          <image class="tool-icon" src="{{item.icon}}" mode="aspectFit"></image>
+          <view class="tool-info">
+            <view class="tool-name">{{item.name}}</view>
+            <view class="tool-desc">{{item.description}}</view>
+          </view>
         </view>
       </view>
     </view>
-  </view>
+    <!-- 网络状态提示 -->
+    <view class="network-status" wx:if="{{networkType !== 'wifi'}}">当前网络类型: {{networkType}}</view>
+  </block>
 </view>
