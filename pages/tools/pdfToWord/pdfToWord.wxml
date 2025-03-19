@@ -1,0 +1,60 @@
+<!-- pages/tools/pdfToWord/pdfToWord.wxml -->
+<view class="container">
+    <view class="header">
+        <view class="title">PDF转Word</view>
+        <view class="subtitle">将PDF文档转换为可编辑的Word文件</view>
+    </view>
+    <view class="tool-content card">
+        <view class="info-text">选择PDF文档，自动转换为可编辑的Word文件格式</view>
+        <view class="pdf-container" wx:if="{{pdfSelected}}">
+            <view class="pdf-info">
+                <view class="pdf-name">{{pdfName}}</view>
+                <view class="pdf-pages" wx:if="{{pdfPages}}">页数: {{pdfPages}}</view>
+            </view>
+        </view>
+        <view class="error-text" wx:if="{{errorMsg}}">{{errorMsg}}</view>
+        <view class="button-group">
+            <button class="btn-primary choose-button" bindtap="choosePdf">
+                {{pdfSelected ? '重新选择PDF' : '选择PDF'}}
+            </button>
+            <button class="btn-primary process-button" bindtap="processPdf" disabled="{{!pdfSelected || processing}}" loading="{{processing}}">
+                开始转换
+            </button>
+        </view>
+        <view class="result-container" wx:if="{{result}}">
+            <view class="result-title">处理结果</view>
+            <view class="result-info">
+                <view class="result-item">
+                    <view class="item-label">文件名:</view>
+                    <view class="item-value">{{result.fileName}}</view>
+                </view>
+                <view class="result-item">
+                    <view class="item-label">文件大小:</view>
+                    <view class="item-value">{{result.fileSize}}</view>
+                </view>
+            </view>
+            <button class="btn-primary download-button" bindtap="downloadWord">下载Word文件</button>
+        </view>
+    </view>
+    <view class="tips card">
+        <view class="tips-title">使用提示</view>
+        <view class="tips-list">
+            <view class="tips-item">1. 仅支持PDF格式文件</view>
+            <view class="tips-item">2. 转换后的文件可能与原PDF排版有所差异</view>
+            <view class="tips-item">3. 复杂排版的PDF可能会影响转换效果</view>
+            <view class="tips-item">4. 转换过程可能需要较长时间，请耐心等待</view>
+        </view>
+    </view>
+    <!-- 调试信息区域 -->
+    <view class="debug-info card">
+        <view class="debug-title">调试信息</view>
+        <view class="debug-content">
+            <view>服务器: excel.sube.top</view>
+            <view>PDF文件: {{pdfSelected ? '已选择' : '未选择'}}</view>
+            <view wx:if="{{result}}">Word URL: {{result.wordUrl}}</view>
+            <view>环境: {{isIOS ? 'iOS' : (isAndroid ? 'Android' : '其他')}}</view>
+            <view>小程序版本: 当前</view>
+            <view>网络状态: {{networkType || '未知'}}</view>
+        </view>
+    </view>
+</view>

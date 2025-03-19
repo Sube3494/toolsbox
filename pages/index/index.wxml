@@ -1,0 +1,18 @@
+<!-- index.wxml -->
+<view class="container">
+  <view class="header">
+    <view class="title">工具箱</view>
+    <view class="subtitle">实用工具集合</view>
+  </view>
+  <view class="tools-list">
+    <view class="tool-item card" wx:for="{{tools}}" wx:key="id" bindtap="navigateToTool" data-id="{{item.id}}">
+      <view class="tool-content">
+        <image class="tool-icon" src="{{item.icon}}" mode="aspectFit"></image>
+        <view class="tool-info">
+          <view class="tool-name">{{item.name}}</view>
+          <view class="tool-desc">{{item.description}}</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

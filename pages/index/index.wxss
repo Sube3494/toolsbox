@@ -1,0 +1,170 @@
+/**index.wxss**/
+.container {
+  padding: 30rpx 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.header {
+  width: 100%;
+  padding: 40rpx 0;
+  text-align: center;
+}
+
+.title {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.subtitle {
+  font-size: 28rpx;
+  color: #999;
+  margin-top: 10rpx;
+}
+
+.tools-list {
+  width: 85%;
+  padding: 0;
+  box-sizing: border-box;
+  margin: 20rpx auto 0;
+}
+
+.tool-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 20rpx 30rpx;
+  margin-bottom: 15rpx;
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 12rpx;
+}
+
+.tool-content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.tool-icon {
+  width: 80rpx;
+  height: 80rpx;
+  margin-right: 30rpx;
+}
+
+.tool-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.tool-name {
+  font-size: 32rpx;
+  font-weight: 500;
+  color: #333;
+}
+
+.tool-desc {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 10rpx;
+}
+
+.tool-arrow-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(7, 193, 96, 0.1);
+  border-radius: 8rpx;
+  padding: 12rpx 16rpx;
+  margin-left: 60rpx;
+  margin-right: 40rpx;
+  min-width: 40rpx;
+  min-height: 40rpx;
+}
+
+.tool-arrow {
+  color: #07c160;
+  font-size: 32rpx;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0;
+}
+
+.category-tabs {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 30rpx;
+  width: 90%;
+  box-sizing: border-box;
+}
+
+.tab {
+  font-size: 28rpx;
+  color: #666;
+  padding: 16rpx 30rpx;
+  border-radius: 30rpx;
+  margin: 0 10rpx;
+  transition: all 0.3s;
+  text-align: center;
+}
+
+.tab.active {
+  color: #07c160;
+  background-color: rgba(7, 193, 96, 0.1);
+  font-weight: 500;
+}
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24rpx;
+  margin-bottom: 30rpx;
+  width: 90%;
+}
+
+/* 工具卡片样式 */
+.tool-card {
+  background-color: #fff;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.tool-card:active {
+  transform: scale(0.97);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+}
+
+.tool-icon-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 120rpx;
+  margin-bottom: 20rpx;
+}
+
+.tool-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #f0f0f0;
+}
+
+.use-count {
+  font-size: 22rpx;
+  color: #aaa;
+}

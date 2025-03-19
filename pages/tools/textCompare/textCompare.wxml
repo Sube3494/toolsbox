@@ -1,0 +1,84 @@
+<!-- pages/tools/textCompare/textCompare.wxml -->
+<view class="container">
+  <view class="header">
+    <view class="title">文本比较工具</view>
+    <view class="subtitle">对比两段文本，突出显示差异</view>
+  </view>
+  <view class="tool-content card">
+    <view class="info-text">输入或粘贴两段要比较的文本</view>
+    
+    <view class="section-title">文本 1:</view>
+    <textarea class="text-input" bindinput="onText1Change" value="{{text1}}" placeholder="请输入第一段文本" maxlength="-1"></textarea>
+    
+    <view class="section-title">文本 2:</view>
+    <textarea class="text-input" bindinput="onText2Change" value="{{text2}}" placeholder="请输入第二段文本" maxlength="-1"></textarea>
+    
+    <view class="error-text" wx:if="{{errorMsg}}">{{errorMsg}}</view>
+    
+    <view class="button-group">
+      <button class="btn-primary clear-button" bindtap="clearText">
+        清空输入
+      </button>
+      <button class="btn-primary compare-button" bindtap="compareText" disabled="{{!canCompare || processing}}" loading="{{processing}}">
+        开始比较
+      </button>
+    </view>
+    
+    <view class="result-container" wx:if="{{result}}">
+      <view class="result-title">比较结果</view>
+      <view class="result-stats">
+        <view class="stats-row">
+          <view class="stats-label">相似度:</view>
+          <view class="stats-value">{{result.similarity}}%</view>
+        </view>
+        <view class="stats-row">
+          <view class="stats-label">新增行:</view>
+          <view class="stats-value added-count">{{result.added_lines}}</view>
+        </view>
+        <view class="stats-row">
+          <view class="stats-label">删除行:</view>
+          <view class="stats-value removed-count">{{result.removed_lines}}</view>
+        </view>
+        <view class="stats-row">
+          <view class="stats-label">相同行:</view>
+          <view class="stats-value unchanged-count">{{result.unchanged_lines}}</view>
+        </view>
+      </view>
+      <view class="result-legend">
+        <view class="legend-item">
+          <view class="color-block added"></view>
+          <text>新增</text>
+        </view>
+        <view class="legend-item">
+          <view class="color-block removed"></view>
+          <text>删除</text>
+        </view>
+        <view class="legend-item">
+          <view class="color-block unchanged"></view>
+          <text>未变</text>
+        </view>
+      </view>
+      <button class="btn-primary view-button" bindtap="viewDiff">查看详细对比</button>
+    </view>
+  </view>
+  <view class="tips card">
+    <view class="tips-title">使用提示</view>
+    <view class="tips-list">
+      <view class="tips-item">1. 支持较长文本的比较</view>
+      <view class="tips-item">2. 比较结果将突出显示所有差异</view>
+      <view class="tips-item">3. 文本长度无限制，但过长可能影响性能</view>
+      <view class="tips-item">4. 可以从其他应用复制文本进行比较</view>
+    </view>
+  </view>
+  <!-- 调试信息区域 -->
+  <view class="debug-info card">
+    <view class="debug-title">调试信息</view>
+    <view class="debug-content">
+      <view>服务器: excel.sube.top</view>
+      <view>文本1长度: {{text1.length}} 字符</view>
+      <view>文本2长度: {{text2.length}} 字符</view>
+      <view wx:if="{{result}}">结果URL: {{result.resultUrl}}</view>
+      <view>网络状态: {{networkType || '未知'}}</view>
+    </view>
+  </view>
+</view> 

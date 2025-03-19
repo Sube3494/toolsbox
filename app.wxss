@@ -1,0 +1,36 @@
+/**app.wxss**/
+page {
+    height: 100%;
+    background-color: #f8f8f8;
+    font-size: 16px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Sans-serif;
+}
+
+.container {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    box-sizing: border-box;
+    padding: 0 30rpx;
+}
+
+.card {
+    width: 100%;
+    background-color: #fff;
+    border-radius: 12rpx;
+    box-shadow: 0 2rpx 10rpx 0 rgba(0, 0, 0, 0.05);
+    margin-bottom: 20rpx;
+    padding: 30rpx;
+}
+
+.btn-primary {
+    background-color: #07c160;
+    color: #fff;
+    border: none;
+}
+
+.btn-primary::after {
+    border: none;
+}
