@@ -342,46 +342,357 @@ def compare_text():
         text1 = data['text1']
         text2 = data['text2']
         
-        # 使用difflib比较文本
-        d = difflib.Differ()
-        diff = list(d.compare(text1.splitlines(), text2.splitlines()))
+        # 使用difflib的SequenceMatcher进行字符级别的比较
+        matcher = difflib.SequenceMatcher(None, text1, text2)
         
         # 生成HTML格式的差异结果
         html_diff = []
-        for line in diff:
-            if line.startswith('+ '):
-                html_diff.append(f'<div class="added">{line[2:]}</div>')
-            elif line.startswith('- '):
-                html_diff.append(f'<div class="removed">{line[2:]}</div>')
-            elif line.startswith('? '):
-                continue  # 忽略标记行
-            else:
-                html_diff.append(f'<div class="unchanged">{line[2:]}</div>')
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            if tag == 'equal':
+                html_diff.append(f'<span class="unchanged">{text1[i1:i2]}</span>')
+            elif tag == 'delete':
+                html_diff.append(f'<span class="removed">{text1[i1:i2]}</span>')
+            elif tag == 'insert':
+                html_diff.append(f'<span class="added">{text2[j1:j2]}</span>')
+            elif tag == 'replace':
+                html_diff.append(f'<span class="removed">{text1[i1:i2]}</span>')
+                html_diff.append(f'<span class="added">{text2[j1:j2]}</span>')
+        
+        # 计算统计数据
+        similarity = round(matcher.ratio() * 100, 2)
+        added_chars = sum(j2 - j1 for tag, i1, i2, j1, j2 in matcher.get_opcodes() if tag in ('insert', 'replace'))
+        removed_chars = sum(i2 - i1 for tag, i1, i2, j1, j2 in matcher.get_opcodes() if tag in ('delete', 'replace'))
+        unchanged_chars = sum(i2 - i1 for tag, i1, i2, j1, j2 in matcher.get_opcodes() if tag == 'equal')
+        total_chars = len(text1) + len(text2)
         
         # 创建完整的HTML
         full_html = f'''
         <!DOCTYPE html>
-        <html>
+        <html lang="zh-CN">
         <head>
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <title>文本比较结果</title>
             <style>
-                body {{ font-family: Arial, sans-serif; margin: 20px; }}
-                .added {{ background-color: #e6ffe6; color: #006600; padding: 2px 0; }}
-                .removed {{ background-color: #ffe6e6; color: #cc0000; padding: 2px 0; }}
-                .unchanged {{ padding: 2px 0; }}
-                .summary {{ margin-bottom: 20px; padding: 10px; background-color: #f0f0f0; border-radius: 5px; }}
+                * {{
+                    box-sizing: border-box;
+                    margin: 0;
+                    padding: 0;
+                }}
+                
+                body {{ 
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                    margin: 0;
+                    padding: 0;
+                    line-height: 1.6;
+                    color: #333;
+                    background-color: #f8f9fa;
+                }}
+                
+                .container {{
+                    max-width: 1000px;
+                    margin: 0 auto;
+                    padding: 20px;
+                }}
+                
+                .header {{
+                    text-align: center;
+                    margin-bottom: 30px;
+                    padding-bottom: 20px;
+                    border-bottom: 1px solid #e0e0e0;
+                }}
+                
+                .header h1 {{
+                    font-size: 24px;
+                    font-weight: 600;
+                    color: #333;
+                    margin-bottom: 10px;
+                }}
+                
+                .header p {{
+                    color: #666;
+                    font-size: 16px;
+                }}
+                
+                .summary-card {{
+                    background-color: white;
+                    border-radius: 10px;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                    margin-bottom: 30px;
+                    overflow: hidden;
+                }}
+                
+                .summary-header {{
+                    background-color: #f0f0f0;
+                    padding: 15px 20px;
+                    border-bottom: 1px solid #e0e0e0;
+                }}
+                
+                .summary-header h2 {{
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #333;
+                    margin: 0;
+                }}
+                
+                .summary-content {{
+                    padding: 20px;
+                }}
+                
+                .stats-grid {{
+                    display: grid;
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 20px;
+                }}
+                
+                .similarity-card {{
+                    grid-column: span 2;
+                    background: linear-gradient(135deg, #5b86e5, #36d1dc);
+                    border-radius: 8px;
+                    padding: 20px;
+                    text-align: center;
+                    color: white;
+                }}
+                
+                .similarity-value {{
+                    font-size: 36px;
+                    font-weight: bold;
+                    margin: 10px 0;
+                }}
+                
+                .stat-card {{
+                    background-color: #f9f9f9;
+                    border-radius: 8px;
+                    padding: 15px;
+                    text-align: center;
+                    border: 1px solid #eee;
+                }}
+                
+                .stat-card.added {{
+                    border-left: 4px solid #4CAF50;
+                }}
+                
+                .stat-card.removed {{
+                    border-left: 4px solid #F44336;
+                }}
+                
+                .stat-card.unchanged {{
+                    border-left: 4px solid #2196F3;
+                }}
+                
+                .stat-card h3 {{
+                    font-size: 14px;
+                    color: #666;
+                    margin-bottom: 10px;
+                    font-weight: 500;
+                }}
+                
+                .stat-value {{
+                    font-size: 24px;
+                    font-weight: bold;
+                }}
+                
+                .stat-value.added {{
+                    color: #4CAF50;
+                }}
+                
+                .stat-value.removed {{
+                    color: #F44336;
+                }}
+                
+                .stat-value.unchanged {{
+                    color: #2196F3;
+                }}
+                
+                .legend {{
+                    display: flex;
+                    justify-content: center;
+                    margin-bottom: 20px;
+                    flex-wrap: wrap;
+                    gap: 15px;
+                }}
+                
+                .legend-item {{
+                    display: flex;
+                    align-items: center;
+                    margin-right: 20px;
+                }}
+                
+                .legend-color {{
+                    width: 15px;
+                    height: 15px;
+                    border-radius: 3px;
+                    margin-right: 5px;
+                }}
+                
+                .legend-color.added {{
+                    background-color: #e6ffe6;
+                    border: 1px solid #4CAF50;
+                }}
+                
+                .legend-color.removed {{
+                    background-color: #ffe6e6;
+                    border: 1px solid #F44336;
+                }}
+                
+                .legend-color.unchanged {{
+                    background-color: #f0f8ff;
+                    border: 1px solid #2196F3;
+                }}
+                
+                .diff-card {{
+                    background-color: white;
+                    border-radius: 10px;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                    margin-bottom: 30px;
+                    overflow: hidden;
+                }}
+                
+                .diff-header {{
+                    background-color: #f0f0f0;
+                    padding: 15px 20px;
+                    border-bottom: 1px solid #e0e0e0;
+                }}
+                
+                .diff-header h2 {{
+                    font-size: 18px;
+                    font-weight: 600;
+                    color: #333;
+                    margin: 0;
+                }}
+                
+                .diff-content {{
+                    padding: 25px;
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                    font-family: 'Source Code Pro', monospace;
+                    font-size: 16px;
+                    line-height: 1.8;
+                    background-color: #fafafa;
+                    border-radius: 0 0 10px 10px;
+                    overflow-x: auto;
+                }}
+                
+                .added {{ 
+                    background-color: #e6ffe6; 
+                    color: #006600; 
+                    padding: 2px 4px;
+                    border-radius: 3px;
+                    border: 1px solid #b3ffb3;
+                    margin: 0 1px;
+                }}
+                
+                .removed {{ 
+                    background-color: #ffe6e6; 
+                    color: #cc0000; 
+                    padding: 2px 4px;
+                    text-decoration: line-through;
+                    border-radius: 3px;
+                    border: 1px solid #ffb3b3;
+                    margin: 0 1px;
+                }}
+                
+                .unchanged {{ 
+                    color: #333;
+                }}
+                
+                .footer {{
+                    text-align: center;
+                    margin-top: 40px;
+                    color: #888;
+                    font-size: 14px;
+                    padding-top: 20px;
+                    border-top: 1px solid #e0e0e0;
+                }}
+                
+                @media (max-width: 768px) {{
+                    .container {{
+                        padding: 15px;
+                    }}
+                    
+                    .stats-grid {{
+                        grid-template-columns: 1fr;
+                    }}
+                    
+                    .similarity-card {{
+                        grid-column: span 1;
+                    }}
+                }}
             </style>
         </head>
         <body>
-            <div class="summary">
-                <h3>比较摘要</h3>
-                <p>文本1: {len(text1)} 字符, {len(text1.splitlines())} 行</p>
-                <p>文本2: {len(text2)} 字符, {len(text2.splitlines())} 行</p>
-            </div>
-            <div class="diff-result">
-                {''.join(html_diff)}
+            <div class="container">
+                <div class="header">
+                    <h1>文本比较结果</h1>
+                    <p>详细展示两段文本之间的差异</p>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="summary-header">
+                        <h2>比较摘要</h2>
+                    </div>
+                    <div class="summary-content">
+                        <div class="stats-grid">
+                            <div class="similarity-card">
+                                <h3>文本相似度</h3>
+                                <div class="similarity-value">{similarity}%</div>
+                            </div>
+                            
+                            <div class="stat-card added">
+                                <h3>新增字符</h3>
+                                <div class="stat-value added">{added_chars}</div>
+                            </div>
+                            
+                            <div class="stat-card removed">
+                                <h3>删除字符</h3>
+                                <div class="stat-value removed">{removed_chars}</div>
+                            </div>
+                            
+                            <div class="stat-card unchanged">
+                                <h3>相同字符</h3>
+                                <div class="stat-value unchanged">{unchanged_chars}</div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <h3>文本 1 长度</h3>
+                                <div class="stat-value">{len(text1)}</div>
+                            </div>
+                            
+                            <div class="stat-card">
+                                <h3>文本 2 长度</h3>
+                                <div class="stat-value">{len(text2)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color added"></div>
+                        <span>新增文本</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color removed"></div>
+                        <span>删除文本</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color unchanged"></div>
+                        <span>相同文本</span>
+                    </div>
+                </div>
+                
+                <div class="diff-card">
+                    <div class="diff-header">
+                        <h2>详细对比</h2>
+                    </div>
+                    <div class="diff-content">
+                        {''.join(html_diff)}
+                    </div>
+                </div>
+                
+                <div class="footer">
+                    <p>由微信小程序「文本比较工具」生成</p>
+                </div>
             </div>
         </body>
         </html>
@@ -397,15 +708,6 @@ def compare_text():
         with open(html_path, 'w', encoding='utf-8') as f:
             f.write(full_html)
         
-        # 计算相似度
-        matcher = difflib.SequenceMatcher(None, text1, text2)
-        similarity = round(matcher.ratio() * 100, 2)
-        
-        # 计算改动统计
-        added_lines = sum(1 for line in diff if line.startswith('+ '))
-        removed_lines = sum(1 for line in diff if line.startswith('- '))
-        unchanged_lines = sum(1 for line in diff if line.startswith('  '))
-        
         # 生成下载URL
         html_url = f"https://excel.sube.top/download/{html_name}"
         
@@ -414,10 +716,10 @@ def compare_text():
             'success': True,
             'data': {
                 'similarity': similarity,
-                'added_lines': added_lines,
-                'removed_lines': removed_lines,
-                'unchanged_lines': unchanged_lines,
-                'total_lines': added_lines + removed_lines + unchanged_lines,
+                'added_chars': added_chars,
+                'removed_chars': removed_chars,
+                'unchanged_chars': unchanged_chars,
+                'total_chars': total_chars,
                 'resultUrl': html_url
             }
         })
