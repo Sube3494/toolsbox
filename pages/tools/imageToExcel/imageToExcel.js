@@ -109,12 +109,12 @@ Page({
   // 选择图片
   chooseImage: function () {
     const that = this;
-    
+
     wx.showActionSheet({
       itemList: ['从相册选择', '拍照', '从聊天中选择'],
       success: function (res) {
         let sourceType = ['album', 'camera', 'message'][res.tapIndex];
-        
+
         // 处理从聊天中选择图片的情况
         if (sourceType === 'message') {
           // 微信原生API从聊天记录选择图片
@@ -179,31 +179,15 @@ Page({
       return;
     }
 
-    const that = this;
+    // 首次尝试
+    this.setData({
+      processing: true,
+      errorMsg: '',
+      result: null,
+      retryCount: 0
+    });
 
-    // 如果是重试，显示重试信息
-    if (isRetry) {
-      this.setData({
-        retryCount: this.data.retryCount + 1,
-        processing: true,
-        errorMsg: `正在重试 (${this.data.retryCount + 1}/${this.data.maxRetries})...`
-      });
-
-      // 短暂延迟，给服务器一些恢复时间
-      setTimeout(() => {
-        this.doProcessImage();
-      }, 1500);
-    } else {
-      // 首次尝试
-      this.setData({
-        processing: true,
-        errorMsg: '',
-        result: null,
-        retryCount: 0
-      });
-
-      this.doProcessImage();
-    }
+    this.doProcessImage();
   },
 
   // 实际执行上传处理
@@ -221,13 +205,11 @@ Page({
         // 检查HTTP状态码
         if (res.statusCode !== 200) {
           let errorMsg = '';
-          let canRetry = false;
 
           // 对特定错误进行处理
           if (res.statusCode === 502) {
             errorMsg = '服务器暂时不可用(502)，请稍后重试';
             console.error('服务器返回502错误');
-            canRetry = true;  // 502错误可以重试
           } else {
             errorMsg = `服务器返回错误(${res.statusCode})`;
           }
@@ -237,42 +219,12 @@ Page({
             console.error(`收到HTML错误响应:`, res.data.substring(0, 100) + '...');
           }
 
-          // 检查是否可以重试
-          if (canRetry && this.data.retryCount < this.data.maxRetries) {
-            // 显示重试提示
-            wx.showModal({
-              title: '服务器暂时不可用',
-              content: `是否重试？(${this.data.retryCount + 1}/${this.data.maxRetries})`,
-              confirmText: '重试',
-              cancelText: '取消',
-              success: (result) => {
-                if (result.confirm) {
-                  // 用户选择重试
-                  console.log('用户选择重试上传');
-                  this.processImage(true);  // 传入重试标志
-                } else {
-                  // 用户取消重试
-                  that.setData({
-                    processing: false,
-                    errorMsg: errorMsg
-                  });
-                }
-              }
-            });
-            return;
-          }
-
           that.setData({
             processing: false,
             errorMsg: errorMsg
           });
           return;
         }
-
-        // 重置重试计数
-        that.setData({
-          retryCount: 0
-        });
 
         try {
           // 判断返回的数据类型
@@ -490,23 +442,5 @@ Page({
         });
       }
     });
-  },
-
-  // 尝试重新连接
-  retryConnection: function () {
-    if (this.data.processing) {
-      return;
-    }
-
-    // 检查是否可以重试
-    if (this.data.retryCount < this.data.maxRetries) {
-      this.processImage(true);
-    } else {
-      wx.showToast({
-        title: '已达最大重试次数',
-        icon: 'none',
-        duration: 2000
-      });
-    }
   }
 }) 

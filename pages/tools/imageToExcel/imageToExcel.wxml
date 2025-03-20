@@ -20,9 +20,6 @@
       <button class="btn-primary process-button" bindtap="processImage" disabled="{{!imageLoaded || processing || networkType === 'none'}}" loading="{{processing}}">
         {{processing ? '处理中...' : '开始处理'}}
       </button>
-      <button wx:if="{{errorMsg && errorMsg.includes('502')}}" class="retry-button" bindtap="retryConnection" disabled="{{processing || networkType === 'none'}}">
-        重试连接 ({{retryCount}}/{{maxRetries}})
-      </button>
     </view>
     <view class="result-container" wx:if="{{result}}">
       <view class="result-title">处理结果</view>
