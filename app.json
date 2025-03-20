@@ -6,6 +6,7 @@
         "pages/tools/pdfToWord/pdfToWord",
         "pages/tools/textCompare/textCompare",
         "pages/tools/fileCompression/fileCompression",
+        "pages/tools/batchRename/batchRename",
         "pages/webview/webview"
     ],
     "window": {

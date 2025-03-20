@@ -1,0 +1,48 @@
+/* 按钮样式 */
+.btn {
+    width: 44%;
+    height: 80rpx;
+    line-height: 80rpx;
+    text-align: center;
+    border-radius: 10rpx;
+    font-size: 28rpx;
+    font-weight: 900;
+    color: #fff;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+}
+
+.btn::after {
+    display: none;
+}
+
+.btn.choose {
+    background: #07c160;
+}
+
+.btn.process {
+    background: #409eff;
+}
+
+.btn[disabled] {
+    background: #a0cfff;
+    color: #fff;
+    opacity: 1;
+}
+
+/* 按钮容器 */
+.btn-container {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 30rpx;
+    margin-top: 40rpx;
+}
+
+/* 按钮文字 */
+.btn text {
+    font-size: 28rpx;
+    font-weight: 900;
+    color: #fff;
+}

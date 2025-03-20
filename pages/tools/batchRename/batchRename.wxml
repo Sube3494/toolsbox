@@ -1,0 +1,112 @@
+<!-- pages/tools/batchRename/batchRename.wxml -->
+<view wx:if="{{networkType === 'none'}}" class="network-warning">
+    <text>网络连接已断开，请检查网络设置</text>
+</view>
+<view class="container">
+    <view class="header">
+        <view class="title">批量重命名与打包</view>
+        <view class="subtitle">选择文件或图片批量重命名并打包下载</view>
+    </view>
+    <view class="tool-content card">
+        <view class="info-text">从聊天记录、相册或相机选择文件，批量重命名后打包下载</view>
+        <!-- 文件列表显示 -->
+        <view class="files-list" wx:if="{{files.length > 0}}">
+            <view class="file-item" wx:for="{{files}}" wx:key="index">
+                <view class="file-preview">
+                    <image wx:if="{{item.isImage}}" src="{{item.path}}" mode="aspectFit" class="preview-image"></image>
+                    <view wx:else class="file-icon">{{item.extension}}</view>
+                </view>
+                <view class="file-info">
+                    <view class="file-name-container">
+                        <input class="file-name-input" value="{{item.newName}}" data-index="{{index}}" bindinput="onFileNameChange" placeholder="输入新文件名" />
+                        <text class="file-name-separator">.</text>
+                        <input class="file-ext-input" value="{{item.newExtension}}" data-index="{{index}}" bindinput="onFileExtensionChange" placeholder="扩展名" />
+                    </view>
+                    <view class="file-size">
+                        <text class="original-label">原文件:</text>
+                        <text class="original-name">{{item.originalName}}</text>
+                        <text class="original-size">({{item.size}})</text>
+                    </view>
+                </view>
+                <view class="file-delete" bindtap="deleteFile" data-index="{{index}}">×</view>
+            </view>
+        </view>
+        <!-- 批量命名规则设置 -->
+        <view class="rename-settings" wx:if="{{files.length > 0}}">
+            <view class="section-title">批量命名规则</view>
+            <view class="rename-pattern">
+                <view class="pattern-item">
+                    <view class="item-label">前缀：</view>
+                    <input class="pattern-input" value="{{renamePattern.prefix}}" bindinput="onPrefixChange" placeholder="文件前缀" />
+                </view>
+                <view class="pattern-item">
+                    <view class="item-label">序号：</view>
+                    <switch checked="{{renamePattern.useIndex}}" bindchange="onUseIndexChange" color="#409eff"></switch>
+                    <input wx:if="{{renamePattern.useIndex}}" class="pattern-input" type="number" value="{{renamePattern.startIndex}}" bindinput="onStartIndexChange" placeholder="起始序号" />
+                </view>
+                <view class="pattern-item">
+                    <view class="item-label">后缀：</view>
+                    <input class="pattern-input" value="{{renamePattern.suffix}}" bindinput="onSuffixChange" placeholder="文件后缀" />
+                </view>
+                <view class="pattern-item ext-item">
+                    <view class="item-label">扩展名：</view>
+                    <switch checked="{{renamePattern.changeExtension}}" bindchange="onChangeExtensionChange" color="#409eff"></switch>
+                    <input wx:if="{{renamePattern.changeExtension}}" class="pattern-input" value="{{renamePattern.extension}}" bindinput="onExtensionChange" placeholder="新的扩展名(不含点)" />
+                </view>
+            </view>
+            <button class="btn-primary rename-btn" bindtap="applyBatchRename">应用批量命名</button>
+        </view>
+        <!-- 错误信息 -->
+        <view class="error-text" wx:if="{{errorMsg}}">{{errorMsg}}</view>
+        <!-- 操作按钮 -->
+        <view class="button-group">
+            <button class="btn-primary choose-button" bindtap="chooseFiles">
+                {{files.length > 0 ? '添加更多文件' : '选择文件'}}
+            </button>
+            <button class="btn-primary process-button" bindtap="compressFiles" disabled="{{files.length === 0 || processing || networkType === 'none'}}" loading="{{processing}}">
+                {{processing ? '处理中...' : '打包下载'}}
+            </button>
+        </view>
+        <!-- 处理结果显示 -->
+        <view class="result-container" wx:if="{{result}}">
+            <view class="result-title">处理结果</view>
+            <view class="result-info">
+                <view class="result-item">
+                    <view class="item-label">文件数量:</view>
+                    <view class="item-value">{{files.length}}</view>
+                </view>
+                <view class="result-item">
+                    <view class="item-label">压缩包大小:</view>
+                    <view class="item-value">{{result.fileSize}}</view>
+                </view>
+                <view class="result-item" wx:if="{{result.downloadUrl}}">
+                    <view class="item-label">文件链接:</view>
+                    <view class="item-value file-url">{{result.downloadUrl}}</view>
+                </view>
+            </view>
+            <button class="btn-primary download-button" bindtap="downloadZip">下载压缩包</button>
+        </view>
+    </view>
+    <!-- 使用提示 -->
+    <view class="tips card">
+        <view class="tips-title">使用提示</view>
+        <view class="tips-list">
+            <view class="tips-item">1. 支持从聊天、相机或相册选择文件和图片</view>
+            <view class="tips-item">2. 可以单独编辑每个文件名或批量应用规则</view>
+            <view class="tips-item">3. 文件将保持原有格式，仅重命名</view>
+            <view class="tips-item">4. 所有文件将打包为ZIP格式下载</view>
+        </view>
+    </view>
+    <!-- 调试信息区域 -->
+    <view class="debug-info card">
+        <view class="debug-title">调试信息</view>
+        <view class="debug-content">
+            <view>服务器: excel.sube.top</view>
+            <view>文件数量: {{files.length}}</view>
+            <view wx:if="{{result}}">压缩包URL: {{result.downloadUrl}}</view>
+            <view>环境: {{isIOS ? 'iOS' : (isAndroid ? 'Android' : '其他')}}</view>
+            <view>小程序版本: 当前</view>
+            <view>网络状态: {{networkType || '未知'}}</view>
+        </view>
+    </view>
+</view>

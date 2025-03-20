@@ -43,6 +43,13 @@ Page({
                 icon: '/images/icons/fileCompression.svg', // 改为本地文件路径
                 description: '压缩文件为ZIP或7Z格式',
                 path: '/pages/tools/fileCompression/fileCompression'
+            },
+            {
+                id: 'batchRename',
+                name: '批量重命名与打包',
+                icon: '/images/icons/batchRename.svg', // 改为本地文件路径
+                description: '选择文件批量重命名并打包下载',
+                path: '/pages/tools/batchRename/batchRename'
             }
             // 未来可以在这里添加更多工具
         ],

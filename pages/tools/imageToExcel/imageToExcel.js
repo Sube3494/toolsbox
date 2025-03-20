@@ -109,20 +109,49 @@ Page({
   // 选择图片
   chooseImage: function () {
     const that = this;
-    wx.chooseMedia({
-      count: 1,
-      mediaType: ['image'],
-      sourceType: ['album', 'camera'],
+    
+    wx.showActionSheet({
+      itemList: ['从相册选择', '拍照', '从聊天中选择'],
       success: function (res) {
-        that.setData({
-          imagePath: res.tempFiles[0].tempFilePath,
-          imageLoaded: true,
-          errorMsg: '',
-          result: null
-        });
-      },
-      fail: function (err) {
-        console.error('选择图片失败', err);
+        let sourceType = ['album', 'camera', 'message'][res.tapIndex];
+        
+        // 处理从聊天中选择图片的情况
+        if (sourceType === 'message') {
+          // 微信原生API从聊天记录选择图片
+          wx.chooseMessageFile({
+            count: 1,
+            type: 'image',
+            success: function (res) {
+              that.setData({
+                imagePath: res.tempFiles[0].path,
+                imageLoaded: true,
+                errorMsg: '',
+                result: null
+              });
+            },
+            fail: function (err) {
+              console.error('从聊天选择图片失败', err);
+            }
+          });
+        } else {
+          // 原有的选择图片逻辑
+          wx.chooseMedia({
+            count: 1,
+            mediaType: ['image'],
+            sourceType: [sourceType],
+            success: function (res) {
+              that.setData({
+                imagePath: res.tempFiles[0].tempFilePath,
+                imageLoaded: true,
+                errorMsg: '',
+                result: null
+              });
+            },
+            fail: function (err) {
+              console.error('选择图片失败', err);
+            }
+          });
+        }
       }
     });
   },

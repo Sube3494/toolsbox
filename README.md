@@ -11,6 +11,7 @@
 - **PDF转Word**：将PDF文档转换为可编辑的Word文件
 - **文本比较工具**：对比两段文本，精确到字符级别的差异展示
 - **文件压缩工具**：将多个文件压缩打包为ZIP或7Z格式
+- **批量重命名与打包**：选择多个文件，批量重命名后打包下载
 
 ## 项目结构
 
@@ -46,14 +47,18 @@
 │       │   ├── pdfToWord.js
 │       │   ├── pdfToWord.wxml
 │       │   └── pdfToWord.wxss
-│       └── textCompare     // 文本比较工具
-│           ├── textCompare.js
-│           ├── textCompare.wxml
-│           └── textCompare.wxss
-│       └── fileCompression  // 文件压缩工具
-│           ├── fileCompression.js
-│           ├── fileCompression.wxml
-│           └── fileCompression.wxss
+│       ├── textCompare     // 文本比较工具
+│       │   ├── textCompare.js
+│       │   ├── textCompare.wxml
+│       │   └── textCompare.wxss
+│       ├── fileCompression  // 文件压缩工具
+│       │   ├── fileCompression.js
+│       │   ├── fileCompression.wxml
+│       │   └── fileCompression.wxss
+│       └── batchRename     // 批量重命名与打包工具
+│           ├── batchRename.js
+│           ├── batchRename.wxml
+│           └── batchRename.wxss
 ├── project.config.json     // 项目配置文件
 └── sitemap.json            // 小程序索引配置
 ```
@@ -73,6 +78,7 @@
 - PyPDF2用于PDF处理
 - pdf2docx用于PDF转Word
 - difflib用于文本比较算法
+- zipfile用于文件压缩和打包
 
 ## 功能详解
 
@@ -107,6 +113,13 @@
 - ZIP格式具有最佳兼容性
 - 7Z格式提供更高压缩率
 - 保留原始文件名和结构
+
+### 6. 批量重命名与打包
+- 从聊天记录、相册或相机选择多个文件
+- 支持单独编辑每个文件名和扩展名
+- 提供批量命名规则，可设置前缀、序号和后缀
+- 支持统一修改文件扩展名
+- 将重命名后的文件打包为ZIP格式下载
 
 ## 部署指南
 
@@ -191,10 +204,17 @@
 - PDF转Word功能对于复杂排版的文档可能效果不佳
 - 文本比较功能适用于短到中等长度的文本，过长的文本可能影响性能
 - 后端服务需要配置足够的内存以支持图像处理和OCR功能
+- 批量重命名功能对文件数量有限制，建议一次处理不超过50个文件
 
 ## 更新日志
 
-### 2025-03-21
+### 2025-03-20
+- 添加批量重命名与打包功能，支持多文件批量重命名和打包下载
+- 为新功能添加batchRename.svg图标
+- 优化现有按钮样式，统一各工具界面的视觉效果
+- 更新基础库版本至3.3.4，解决部分旧版兼容性问题
+
+### 2025-03-19
 - 将工具图标改为使用本地SVG文件，不再使用网络链接
 - 添加images/icons目录用于存放工具图标
 - 为每个工具创建独特的SVG图标，提升用户界面美观度
@@ -205,4 +225,5 @@
 - **上传失败**：检查网络连接和文件大小（最大支持20MB）
 - **识别不准确**：尝试上传更清晰的图片或调整图片角度
 - **服务器错误**：查看后端日志 `tail -f app.log`
-- **转换超时**：对于大型文件，可能需要更长的处理时间 
+- **转换超时**：对于大型文件，可能需要更长的处理时间
+- **基础库错误**：遇到"Trace is not defined"等错误时，尝试更新到最新基础库版本 

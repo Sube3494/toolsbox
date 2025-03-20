@@ -1,0 +1,364 @@
+/* pages/tools/batchRename/batchRename.wxss */
+.container {
+    padding: 20rpx;
+}
+
+.network-warning {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 10rpx 20rpx;
+    text-align: center;
+    z-index: 9999;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    font-size: 28rpx;
+    width: 100%;
+}
+
+.header {
+    width: 100%;
+    padding: 30rpx 0;
+    text-align: center;
+}
+
+.title {
+    font-size: 40rpx;
+    font-weight: bold;
+    color: #333;
+}
+
+.subtitle {
+    font-size: 28rpx;
+    color: #999;
+    margin-top: 10rpx;
+}
+
+.card {
+    background-color: #fff;
+    border-radius: 12rpx;
+    padding: 30rpx;
+    margin-bottom: 20rpx;
+    box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.1);
+}
+
+.tool-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.info-text {
+    font-size: 28rpx;
+    color: #666;
+    text-align: center;
+    margin-bottom: 30rpx;
+}
+
+.files-list {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 20rpx;
+    margin-bottom: 30rpx;
+}
+
+.file-item {
+    width: 100%;
+    position: relative;
+    background-color: #f0f0f0;
+    border-radius: 8rpx;
+    padding: 20rpx;
+    display: flex;
+    align-items: center;
+}
+
+.file-preview {
+    width: 100rpx;
+    height: 100rpx;
+    margin-right: 20rpx;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f0f0;
+    border-radius: 8rpx;
+    overflow: hidden;
+    border: 1px solid #e0e0e0;
+}
+
+.preview-image {
+    width: 100%;
+    height: 100%;
+}
+
+.file-icon {
+    font-size: 24rpx;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.file-info {
+    flex: 1;
+    overflow: hidden;
+}
+
+.file-name-container {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 8rpx;
+}
+
+.file-name-input {
+    flex: 3;
+    font-size: 28rpx;
+    padding: 8rpx 0;
+    background-color: transparent;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.file-name-separator {
+    margin: 0 6rpx;
+    font-size: 28rpx;
+    color: #666;
+}
+
+.file-ext-input {
+    flex: 1;
+    max-width: 120rpx;
+    font-size: 28rpx;
+    padding: 8rpx 0;
+    background-color: transparent;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.file-size {
+    font-size: 24rpx;
+    color: #999;
+}
+
+.original-label {
+    color: #999;
+    margin-right: 4rpx;
+}
+
+.original-name {
+    color: #666;
+    margin-right: 4rpx;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200rpx;
+}
+
+.original-size {
+    color: #999;
+}
+
+.file-delete {
+    width: 50rpx;
+    height: 50rpx;
+    background-color: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 25rpx;
+    font-size: 40rpx;
+    line-height: 1;
+}
+
+.error-text {
+    color: #ff4d4f;
+    font-size: 28rpx;
+    margin: 20rpx 0;
+    word-break: break-all;
+}
+
+.button-group {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    margin: 30rpx 0;
+    gap: 30rpx;
+}
+
+.choose-button,
+.process-button {
+    width: 44%;
+}
+
+.btn-primary {
+    background-color: #07c160;
+    color: #fff;
+    border: none;
+}
+
+.btn-primary::after {
+    border: none;
+}
+
+.choose-button {
+    background-color: #07c160;
+}
+
+.process-button {
+    background-color: #409eff;
+}
+
+.process-button[disabled] {
+    background-color: #a0cfff;
+}
+
+.rename-settings {
+    width: 100%;
+    margin-bottom: 20rpx;
+    padding: 20rpx;
+    background-color: #f7f7f7;
+    border-radius: 8rpx;
+}
+
+.section-title {
+    width: 100%;
+    font-size: 30rpx;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 15rpx;
+}
+
+.pattern-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16rpx;
+}
+
+.item-label {
+    width: 120rpx;
+    font-size: 28rpx;
+    color: #666;
+}
+
+.ext-item {
+    margin-top: 8rpx;
+    border-top: 1px dashed #e8e8e8;
+    padding-top: 16rpx;
+}
+
+.pattern-input {
+    flex: 1;
+    height: 64rpx;
+    padding: 0 16rpx;
+    font-size: 28rpx;
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8rpx;
+}
+
+.rename-btn {
+    width: 100%;
+    background-color: #07c160;
+    color: #fff;
+    border: none;
+}
+
+.rename-btn::after {
+    border: none;
+}
+
+.result-container {
+    width: 100%;
+    margin-top: 30rpx;
+    padding-top: 30rpx;
+    border-top: 1px solid #eee;
+}
+
+.result-title {
+    font-size: 32rpx;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 20rpx;
+}
+
+.result-info {
+    width: 100%;
+    margin-bottom: 30rpx;
+}
+
+.result-item {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 10rpx;
+}
+
+.item-value {
+    font-size: 28rpx;
+    color: #333;
+    font-weight: 500;
+}
+
+.file-url {
+    font-size: 24rpx;
+    color: #1890ff;
+    word-break: break-all;
+    max-width: 500rpx;
+}
+
+.download-button {
+    width: 100%;
+    background-color: #409eff;
+    color: #fff;
+    border: none;
+}
+
+.download-button::after {
+    border: none;
+}
+
+.tips {
+    width: 100%;
+    margin-top: 30rpx;
+}
+
+.tips-title {
+    font-size: 32rpx;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 20rpx;
+}
+
+.tips-list {
+    width: 100%;
+}
+
+.tips-item {
+    font-size: 26rpx;
+    color: #666;
+    margin-bottom: 10rpx;
+    line-height: 1.5;
+}
+
+/* 调试信息样式 */
+.debug-info {
+    width: 100%;
+    margin-top: 30rpx;
+    background-color: #f5f5f5;
+    border-left: 4rpx solid #ddd;
+    font-family: monospace;
+}
+
+.debug-title {
+    font-size: 28rpx;
+    font-weight: 500;
+    color: #666;
+    margin-bottom: 10rpx;
+}
+
+.debug-content {
+    font-size: 24rpx;
+    color: #999;
+    line-height: 1.6;
+    word-break: break-all;
+}

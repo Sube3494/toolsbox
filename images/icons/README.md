@@ -17,6 +17,7 @@
 4. `pdfToWord.svg` - PDF转Word工具图标
 5. `textCompare.svg` - 文本比较工具图标
 6. `fileCompression.svg` - 文件压缩工具图标
+7. `batchRename.svg` - 批量重命名与打包工具图标
 
 ## 如何修改图标
 
