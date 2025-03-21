@@ -9,7 +9,8 @@ Page({
         errorMsg: '',
         isIOS: false,
         isAndroid: false,
-        networkType: ''
+        networkType: '',
+        outputFormat: 'word' // 默认转换格式为Word
     },
 
     onLoad: function () {
@@ -28,6 +29,19 @@ Page({
                 });
             }
         });
+    },
+
+    // 选择输出格式
+    onFormatChange: function (e) {
+        this.setData({
+            outputFormat: e.detail.value
+        });
+        // 如果已经有结果，清除结果，因为格式变了
+        if (this.data.result) {
+            this.setData({
+                result: null
+            });
+        }
     },
 
     // 选择Markdown文件
@@ -91,9 +105,14 @@ Page({
 
         const that = this;
 
+        // 根据选择的格式确定API端点
+        const apiEndpoint = this.data.outputFormat === 'word' ?
+            'https://excel.sube.top/md-to-word' :
+            'https://excel.sube.top/md-to-pdf';
+
         // 上传Markdown文件到服务器处理
         wx.uploadFile({
-            url: 'https://excel.sube.top/md-to-word',
+            url: apiEndpoint,
             filePath: this.data.mdPath,
             name: 'md',
             success: function (res) {
@@ -128,9 +147,21 @@ Page({
         });
     },
 
-    // 下载Word文件
-    downloadWord: function () {
-        if (!this.data.result || !this.data.result.wordUrl) {
+    // 下载文件（Word或PDF）
+    downloadFile: function () {
+        if (!this.data.result) {
+            wx.showToast({
+                title: '无文件链接',
+                icon: 'none'
+            });
+            return;
+        }
+
+        const fileUrl = this.data.outputFormat === 'word' ?
+            this.data.result.wordUrl :
+            this.data.result.pdfUrl;
+
+        if (!fileUrl) {
             wx.showToast({
                 title: '无文件链接',
                 icon: 'none'
@@ -146,7 +177,7 @@ Page({
 
         // 使用下载API
         wx.downloadFile({
-            url: this.data.result.wordUrl,
+            url: fileUrl,
             success: function (res) {
                 wx.hideLoading();
 
@@ -154,7 +185,8 @@ Page({
                     const tempFilePath = res.tempFilePath;
 
                     // 文件名处理
-                    const fileName = that.data.result.fileName || 'word_document.docx';
+                    const fileName = that.data.result.fileName ||
+                        (that.data.outputFormat === 'word' ? 'word_document.docx' : 'document.pdf');
 
                     // 目标路径
                     const fsm = wx.getFileSystemManager();
@@ -170,7 +202,7 @@ Page({
                             showMenu: true,
                             success: function () {
                                 wx.showToast({
-                                    title: 'Word已保存',
+                                    title: that.data.outputFormat === 'word' ? 'Word已保存' : 'PDF已保存',
                                     icon: 'success'
                                 });
                             },

@@ -1,20 +1,33 @@
 <view class="container">
     <view class="header">
-        <view class="title">Markdown转Word</view>
-        <view class="subtitle">将Markdown文档转换为可编辑的Word文件</view>
+        <view class="title">Markdown转换工具</view>
+        <view class="subtitle">将Markdown文档转换为Word或PDF格式</view>
     </view>
     <view class="tool-content card">
-        <view class="info-text">选择Markdown文档，自动转换为可编辑的Word文件格式</view>
+        <view class="info-text">选择Markdown文档，自动转换为可编辑的Word或PDF格式</view>
         <view class="md-container" wx:if="{{mdSelected}}">
             <view class="md-info">
                 <view class="md-name">{{mdName}}</view>
                 <view class="md-size" wx:if="{{mdSize}}">大小: {{mdSize}}</view>
             </view>
         </view>
+        <view class="format-selector">
+            <text>选择输出格式：</text>
+            <radio-group bindchange="onFormatChange">
+                <label class="radio-item">
+                    <radio value="word" checked="{{outputFormat === 'word'}}" />
+                    Word
+                </label>
+                <label class="radio-item">
+                    <radio value="pdf" checked="{{outputFormat === 'pdf'}}" />
+                    PDF
+                </label>
+            </radio-group>
+        </view>
         <view class="error-text" wx:if="{{errorMsg}}">{{errorMsg}}</view>
         <view class="button-group">
             <button class="btn-primary choose-button" bindtap="chooseMd">
-                {{mdSelected ? '重新选择MD' : '选择Markdown'}}
+                {{mdSelected ? '重新选择MD' : '选择MD文档'}}
             </button>
             <button class="btn-primary process-button" bindtap="processMd" disabled="{{!mdSelected || processing}}" loading="{{processing}}">
                 开始转换
@@ -32,7 +45,9 @@
                     <view class="item-value">{{result.fileSize}}</view>
                 </view>
             </view>
-            <button class="btn-primary download-button" bindtap="downloadWord">下载Word文件</button>
+            <button class="btn-primary download-button" bindtap="downloadFile">
+                下载{{outputFormat === 'word' ? 'Word' : 'PDF'}}文件
+            </button>
         </view>
     </view>
     <view class="tips card">
@@ -42,6 +57,7 @@
             <view class="tips-item">2. 转换后的文件可能与原Markdown排版有所差异</view>
             <view class="tips-item">3. 支持常见的Markdown语法如标题、列表、代码块等</view>
             <view class="tips-item">4. 转换过程可能需要一定时间，请耐心等待</view>
+            <view class="tips-item">5. PDF格式适合保留精确排版，Word格式适合后续编辑</view>
         </view>
     </view>
 </view>

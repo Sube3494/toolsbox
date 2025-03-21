@@ -39,9 +39,9 @@ Page({
             },
             {
                 id: 'mdToWord',
-                name: 'Markdown转Word',
+                name: 'Markdown转换工具',
                 icon: '/images/icons/mdToWord.svg', // 改为本地文件路径
-                description: '将Markdown文档转换为可编辑的Word文件',
+                description: '将Markdown转换为Word或PDF格式',
                 path: '/pages/tools/mdToWord/mdToWord'
             },
             {

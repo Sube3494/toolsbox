@@ -13,7 +13,7 @@
 - **文本比较工具**：对比两段文本，精确到字符级别的差异展示
 - **文件压缩工具**：将多个文件压缩打包为ZIP或7Z格式
 - **批量重命名与打包**：选择多个文件，批量重命名后打包下载
-- **Markdown转Word**：将Markdown文档转换为Word格式
+- **Markdown转换工具**：将Markdown文档转换为Word或PDF格式
 
 ## 项目结构
 
@@ -156,11 +156,12 @@
 - 支持统一修改文件扩展名
 - 将重命名后的文件打包为ZIP格式下载
 
-### 8. Markdown转Word
+### 8. Markdown转换工具
 - 上传Markdown文档
-- 自动转换为可编辑的Word文件
+- 自动转换为Word或PDF格式
+- 支持设置输出格式（Word或PDF）
 - 保留标题、列表、代码块等Markdown格式
-- 支持表格、标题层级等复杂元素转换
+- Word格式适合后续编辑，PDF格式适合保留排版
 - 提供转换后文件下载
 
 ## 部署指南
@@ -362,8 +363,10 @@ sudo supervisorctl restart toolsbox
 ## 更新日志
 
 ### 2025-03-21
+- 升级Markdown转换工具，增加转换为PDF的功能
+- 添加美观的PDF输出样式，保留Markdown格式
 - 添加Markdown转Word功能，支持将Markdown文档转换为Word格式
-- 为Markdown转Word功能添加对应的mdToWord.svg图标
+- 为Markdown转换工具添加对应的mdToWord.svg图标
 - 移除所有工具页面中的调试信息区域，使界面更加简洁
 - 优化各功能页面的提示信息，增强用户体验
 - 修复网络连接检测功能，增加断网提示

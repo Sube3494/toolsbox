@@ -18,6 +18,7 @@ import py7zr
 import shutil
 import PyPDF2
 import threading
+from chardet import detect
 
 app = Flask(__name__)
 CORS(app)
@@ -382,71 +383,178 @@ def md_to_word():
         word_name = f"word_{unique_id}.docx"
         word_path = os.path.join(app.config['OUTPUT_FOLDER'], word_name)
         
-        # 使用python-docx将Markdown转换为Word
-        from markdown import markdown
-        from docx import Document
-        from docx.shared import Pt, Inches
-        from bs4 import BeautifulSoup
-
-        # 读取Markdown内容
-        with open(md_path, 'r', encoding='utf-8') as f:
-            md_content = f.read()
-        
-        # 将Markdown转换为HTML
-        html = markdown(md_content, extensions=['tables', 'fenced_code', 'codehilite'])
-        
-        # 使用BeautifulSoup解析HTML
-        soup = BeautifulSoup(html, 'html.parser')
-        
-        # 创建Word文档
-        doc = Document()
-        
-        # 设置文档页面边距
-        sections = doc.sections
-        for section in sections:
-            section.top_margin = Inches(1)
-            section.bottom_margin = Inches(1)
-            section.left_margin = Inches(1)
-            section.right_margin = Inches(1)
-        
-        # 处理HTML元素
-        for element in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'pre', 'table']):
-            if element.name.startswith('h'):
-                level = int(element.name[1])
-                heading = doc.add_heading(element.get_text(), level=level)
-            elif element.name == 'p':
-                p = doc.add_paragraph(element.get_text())
-            elif element.name == 'ul':
-                for li in element.find_all('li'):
-                    p = doc.add_paragraph(li.get_text(), style='List Bullet')
-            elif element.name == 'ol':
-                for li in element.find_all('li'):
-                    p = doc.add_paragraph(li.get_text(), style='List Number')
-            elif element.name == 'pre':
-                code = element.get_text()
-                p = doc.add_paragraph(code)
-                for run in p.runs:
-                    run.font.name = 'Courier New'
-                    run.font.size = Pt(10)
-            elif element.name == 'table':
-                rows = element.find_all('tr')
-                if rows:
-                    # 获取表格列数
-                    cols = max([len(row.find_all(['td', 'th'])) for row in rows])
+        # 尝试使用pandoc将Markdown转换为Word (更高质量的转换)
+        try:
+            import subprocess
+            
+            # 为确保中文正确显示，先检测文件编码
+            with open(md_path, 'rb') as f:
+                raw_data = f.read()
+                encoding = detect(raw_data)['encoding'] or 'utf-8'
+            
+            # 创建一个带有中文支持的自定义参考文档
+            # 如果没有自定义的参考文档，创建一个临时的基本模板
+            reference_path = os.path.join(app.config['TEMP_FOLDER'], "reference.docx")
+            if not os.path.exists(reference_path):
+                from docx import Document
+                from docx.shared import Pt, RGBColor
+                
+                doc = Document()
+                # 设置默认字体为支持中文的字体
+                style = doc.styles['Normal']
+                font = style.font
+                font.name = 'SimSun'  # 宋体
+                font.size = Pt(12)
+                
+                # 添加标题样式
+                for i in range(1, 7):
+                    style = doc.styles[f'Heading {i}']
+                    font = style.font
+                    font.name = 'SimHei'  # 黑体
+                    font.bold = True
+                    font.size = Pt(18 - i)  # 标题逐级减小
+                
+                # 保存参考文档
+                doc.save(reference_path)
+            
+            # 检查是否安装了pandoc
+            try:
+                subprocess.run(['pandoc', '--version'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                
+                # 使用pandoc进行转换，添加更多参数以确保正确格式化
+                cmd = [
+                    'pandoc', 
+                    md_path, 
+                    '-o', word_path,
+                    '--reference-doc=' + reference_path,
+                    '--standalone',
+                    '-f', 'markdown+smart',
+                    '-t', 'docx',
+                    '--dpi=300',  # 高分辨率
+                    '--wrap=none'  # 不自动换行
+                ]
+                
+                # 执行命令
+                result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+                
+                # 如果命令输出包含错误信息，记录下来
+                if result.stderr:
+                    print(f"Pandoc警告: {result.stderr}")
+                
+            except (subprocess.SubprocessError, FileNotFoundError) as pandoc_err:
+                print(f"Pandoc转换失败: {str(pandoc_err)}")
+                # 如果找不到pandoc，回退到原来的python-docx方法
+                from markdown import markdown
+                from docx import Document
+                from docx.shared import Pt, Inches, RGBColor
+                from bs4 import BeautifulSoup
+                
+                # 读取Markdown内容，使用检测到的编码
+                with open(md_path, 'r', encoding=encoding) as f:
+                    md_content = f.read()
+                
+                # 将Markdown转换为HTML
+                html = markdown(md_content, extensions=['tables', 'fenced_code', 'codehilite', 'toc'])
+                
+                # 使用BeautifulSoup解析HTML
+                soup = BeautifulSoup(html, 'html.parser')
+                
+                # 创建Word文档
+                doc = Document()
+                
+                # 设置文档基本样式
+                style = doc.styles['Normal']
+                font = style.font
+                font.name = 'SimSun'  # 宋体，兼容中文
+                font.size = Pt(12)
+                
+                # 设置文档页面边距
+                sections = doc.sections
+                for section in sections:
+                    section.top_margin = Inches(1)
+                    section.bottom_margin = Inches(1)
+                    section.left_margin = Inches(1)
+                    section.right_margin = Inches(1)
+                
+                # 处理HTML元素
+                for element in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'pre', 'table', 'blockquote', 'img']):
+                    if element.name.startswith('h'):
+                        level = int(element.name[1])
+                        heading = doc.add_heading(element.get_text(), level=level)
+                        # 设置标题字体
+                        for run in heading.runs:
+                            run.font.name = 'SimHei'  # 黑体，适合中文标题
                     
-                    # 创建表格
-                    table = doc.add_table(rows=len(rows), cols=cols)
-                    table.style = 'Table Grid'
+                    elif element.name == 'p':
+                        if element.find('img'):
+                            # 处理图片
+                            img_tags = element.find_all('img')
+                            for img in img_tags:
+                                try:
+                                    img_src = img.get('src')
+                                    # 对于网络图片，此处需要先下载
+                                    # 这里只是简单处理本地图片
+                                    if os.path.exists(img_src):
+                                        doc.add_picture(img_src, width=Inches(6))
+                                except Exception as img_err:
+                                    print(f"图片处理错误: {str(img_err)}")
+                        else:
+                            # 普通段落
+                            p = doc.add_paragraph(element.get_text())
                     
-                    # 填充表格
-                    for i, row in enumerate(rows):
-                        cells = row.find_all(['td', 'th'])
-                        for j, cell in enumerate(cells):
-                            if j < cols:  # 确保不越界
-                                table.cell(i, j).text = cell.get_text().strip()
-        
-        # 保存文档
-        doc.save(word_path)
+                    elif element.name == 'blockquote':
+                        # 添加引用样式
+                        p = doc.add_paragraph(element.get_text())
+                        p.style = 'Quote'
+                        # 自定义引用样式
+                        for run in p.runs:
+                            run.font.italic = True
+                            run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+                    
+                    elif element.name == 'ul':
+                        for li in element.find_all('li'):
+                            p = doc.add_paragraph(li.get_text(), style='List Bullet')
+                    
+                    elif element.name == 'ol':
+                        for li in element.find_all('li'):
+                            p = doc.add_paragraph(li.get_text(), style='List Number')
+                    
+                    elif element.name == 'pre':
+                        # 添加代码块样式
+                        code = element.get_text()
+                        p = doc.add_paragraph(code)
+                        p.style = 'No Spacing'
+                        for run in p.runs:
+                            run.font.name = 'Courier New'
+                            run.font.size = Pt(10)
+                            run.font.color.rgb = RGBColor(0x00, 0x00, 0xAA)  # 深蓝色
+                    
+                    elif element.name == 'table':
+                        rows = element.find_all('tr')
+                        if rows:
+                            # 获取表格列数
+                            cols = max([len(row.find_all(['td', 'th'])) for row in rows])
+                            
+                            # 创建表格
+                            table = doc.add_table(rows=len(rows), cols=cols)
+                            table.style = 'Table Grid'
+                            
+                            # 填充表格
+                            for i, row in enumerate(rows):
+                                cells = row.find_all(['td', 'th'])
+                                for j, cell in enumerate(cells):
+                                    if j < cols:  # 确保不越界
+                                        table.cell(i, j).text = cell.get_text().strip()
+                                        # 表头样式
+                                        if i == 0 or cell.name == 'th':
+                                            for paragraph in table.cell(i, j).paragraphs:
+                                                for run in paragraph.runs:
+                                                    run.font.bold = True
+                
+                # 保存文档
+                doc.save(word_path)
+        except Exception as convert_err:
+            return jsonify({'success': False, 'message': f'Word转换失败: {str(convert_err)}'}), 500
         
         # 获取文件大小
         file_size = os.path.getsize(word_path)
@@ -462,6 +570,252 @@ def md_to_word():
                 'wordUrl': word_url,
                 'fileSize': f"{file_size_kb}KB",
                 'fileName': word_name
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'转换失败: {str(e)}'}), 500
+
+# =============== MD转PDF功能 ===============
+
+@app.route('/md-to-pdf', methods=['POST'])
+def md_to_pdf():
+    if 'md' not in request.files:
+        return jsonify({'success': False, 'message': '未找到Markdown文件'}), 400
+    
+    file = request.files['md']
+    if file.filename == '':
+        return jsonify({'success': False, 'message': '未选择文件'}), 400
+    
+    # 检查文件类型
+    if not file.filename.lower().endswith(('.md', '.markdown')):
+        return jsonify({'success': False, 'message': '请上传Markdown格式的文件'}), 400
+    
+    # 生成唯一文件名
+    filename = secure_filename(file.filename)
+    timestamp = int(time.time())
+    unique_id = f"{timestamp}_{uuid.uuid4().hex[:8]}"
+    md_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{unique_id}_{filename}")
+    file.save(md_path)
+    
+    try:
+        # 生成PDF文件名
+        pdf_name = f"pdf_{unique_id}.pdf"
+        pdf_path = os.path.join(app.config['OUTPUT_FOLDER'], pdf_name)
+        
+        # 为确保中文正确显示，先检测文件编码
+        with open(md_path, 'rb') as f:
+            raw_data = f.read()
+            encoding = detect(raw_data)['encoding'] or 'utf-8'
+        
+        # 使用pandoc将Markdown转换为PDF (更高质量的转换)
+        try:
+            import subprocess
+            # 创建一个临时LaTeX模板文件，确保支持中文
+            template_path = os.path.join(app.config['TEMP_FOLDER'], "template.tex")
+            with open(template_path, 'w', encoding='utf-8') as f:
+                f.write('''
+\\documentclass[12pt, a4paper]{article}
+\\usepackage{fontspec}
+\\usepackage{hyperref}
+\\usepackage{xeCJK}
+\\usepackage{geometry}
+\\usepackage{listings}
+\\usepackage{xcolor}
+\\usepackage{graphicx}
+\\usepackage{fancyhdr}
+
+% 设置中文字体
+\\setCJKmainfont{SimSun}
+\\setCJKsansfont{SimHei}
+\\setCJKmonofont{SimSun}
+
+% 设置页面尺寸
+\\geometry{a4paper, margin=1in}
+
+% 代码块样式
+\\lstset{
+  basicstyle=\\small\\ttfamily,
+  breaklines=true,
+  backgroundcolor=\\color[rgb]{0.95,0.95,0.95},
+  frame=single,
+  numbers=left,
+  numberstyle=\\tiny,
+  keywordstyle=\\color{blue},
+  commentstyle=\\color[rgb]{0.133,0.545,0.133},
+  stringstyle=\\color[rgb]{0.627,0.126,0.941},
+}
+
+\\begin{document}
+
+$body$
+
+\\end{document}
+                ''')
+            
+            # 检查是否安装了pandoc
+            try:
+                subprocess.run(['pandoc', '--version'], check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                
+                # 读取Markdown内容，确保使用正确的编码
+                with open(md_path, 'r', encoding=encoding) as f:
+                    md_content = f.read()
+                
+                # 使用pandoc进行转换，指定使用xelatex和模板
+                cmd = [
+                    'pandoc',
+                    '--pdf-engine=xelatex',
+                    '--template=' + template_path,
+                    '-V', 'CJKmainfont=SimSun',
+                    '-V', 'CJKoptions=BoldFont=SimHei',
+                    '-V', 'mainfont=DejaVu Serif',
+                    '-V', 'sansfont=DejaVu Sans',
+                    '-V', 'monofont=DejaVu Sans Mono',
+                    '-V', 'fontsize=12pt',
+                    '-V', 'colorlinks=true',
+                    '-f', 'markdown+smart',
+                    '-t', 'pdf',
+                    '--standalone',
+                    '--toc',
+                    '--toc-depth=3',
+                    '-o', pdf_path
+                ]
+                
+                # 写入临时markdown文件
+                temp_md_path = os.path.join(app.config['TEMP_FOLDER'], f"{unique_id}_temp.md")
+                with open(temp_md_path, 'w', encoding='utf-8') as f:
+                    f.write(md_content)
+                
+                cmd.append(temp_md_path)
+                
+                # 执行命令
+                result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+                
+                # 清理临时文件
+                try:
+                    os.remove(temp_md_path)
+                except:
+                    pass
+                
+                # 如果命令输出包含错误信息，记录下来
+                if result.stderr:
+                    print(f"Pandoc警告: {result.stderr}")
+                
+            except (subprocess.SubprocessError, FileNotFoundError) as pandoc_err:
+                print(f"Pandoc转换失败: {str(pandoc_err)}")
+                # 如果找不到pandoc，尝试其他方法
+                raise Exception(f"Pandoc转换失败: {str(pandoc_err)}")
+                
+        except Exception as pandoc_err:
+            # 如果pandoc失败，尝试使用wkhtmltopdf
+            try:
+                # 使用markdown库将Markdown转换为HTML
+                from markdown import markdown
+                
+                # 读取Markdown内容，使用检测到的编码
+                with open(md_path, 'r', encoding=encoding) as f:
+                    md_content = f.read()
+                
+                # 将Markdown转换为HTML
+                html = markdown(md_content, extensions=['tables', 'fenced_code', 'codehilite', 'toc'])
+                
+                # 创建临时HTML文件，添加中文支持
+                html_path = os.path.join(app.config['TEMP_FOLDER'], f"{unique_id}.html")
+                with open(html_path, 'w', encoding='utf-8') as f:
+                    # 添加支持中文的样式
+                    css = """
+                    <style>
+                        @font-face {
+                            font-family: 'SimSun';
+                            src: local('SimSun');
+                        }
+                        body { 
+                            font-family: 'SimSun', Arial, sans-serif; 
+                            margin: 40px; 
+                            line-height: 1.6;
+                        }
+                        h1, h2, h3, h4, h5, h6 { 
+                            font-family: 'SimHei', Arial, sans-serif;
+                            color: #333; 
+                            margin-top: 24px; 
+                            margin-bottom: 16px; 
+                        }
+                        h1 { font-size: 28px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+                        h2 { font-size: 24px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+                        h3 { font-size: 20px; }
+                        h4 { font-size: 18px; }
+                        code { font-family: 'Courier New', monospace; background-color: #f6f8fa; padding: 2px 4px; border-radius: 3px; }
+                        pre { background-color: #f6f8fa; border-radius: 3px; padding: 16px; overflow: auto; }
+                        pre code { background-color: transparent; }
+                        blockquote { padding: 0 1em; color: #6a737d; border-left: 0.25em solid #dfe2e5; }
+                        table { border-collapse: collapse; width: 100%; }
+                        table, th, td { border: 1px solid #ddd; }
+                        th, td { padding: 8px; text-align: left; }
+                        th { background-color: #f2f2f2; }
+                        img { max-width: 100%; }
+                    </style>
+                    """
+                    f.write(f"<!DOCTYPE html><html><head><meta charset='utf-8'>{css}</head><body>{html}</body></html>")
+                
+                # 尝试多种方式将HTML转换为PDF
+                conversion_successful = False
+                
+                # 方法1: wkhtmltopdf
+                try:
+                    import subprocess
+                    # 添加支持中文的选项
+                    cmd = [
+                        'wkhtmltopdf',
+                        '--encoding', 'utf-8',
+                        '--enable-local-file-access',
+                        '--footer-right', '[page]/[topage]',
+                        '--footer-font-size', '8',
+                        html_path, pdf_path
+                    ]
+                    subprocess.run(cmd, check=True)
+                    conversion_successful = True
+                except (subprocess.SubprocessError, FileNotFoundError):
+                    pass
+                
+                # 方法2: weasyprint
+                if not conversion_successful:
+                    try:
+                        from weasyprint import HTML, CSS
+                        from weasyprint.fonts import FontConfiguration
+                        
+                        # 配置字体
+                        font_config = FontConfiguration()
+                        HTML(html_path).write_pdf(pdf_path, font_config=font_config)
+                        conversion_successful = True
+                    except ImportError:
+                        pass
+                
+                # 清理临时文件
+                try:
+                    os.remove(html_path)
+                except:
+                    pass
+                
+                if not conversion_successful:
+                    raise Exception("未找到合适的HTML到PDF转换工具，请安装pandoc或wkhtmltopdf")
+            
+            except Exception as html_err:
+                raise Exception(f"PDF转换失败: {str(html_err)}")
+        
+        # 获取文件大小
+        file_size = os.path.getsize(pdf_path)
+        file_size_kb = round(file_size / 1024, 2)
+        
+        # 生成下载URL
+        pdf_url = f"https://excel.sube.top/download/{pdf_name}"
+        
+        # 返回结果
+        return jsonify({
+            'success': True,
+            'data': {
+                'pdfUrl': pdf_url,
+                'fileSize': f"{file_size_kb}KB",
+                'fileName': pdf_name
             }
         })
         
