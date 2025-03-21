@@ -106,12 +106,12 @@ Page({
   // 选择图片
   chooseImages: function () {
     const that = this;
-    
+
     wx.showActionSheet({
       itemList: ['从相册选择', '拍照', '从聊天中选择'],
       success: function (res) {
         let sourceType = ['album', 'camera', 'message'][res.tapIndex];
-        
+
         // 处理从聊天中选择图片的情况
         if (sourceType === 'message') {
           // 微信原生API从聊天记录选择图片
@@ -633,5 +633,22 @@ Page({
         }
       });
     });
+  },
+
+  // 复制链接到剪贴板
+  copyLink: function (e) {
+    const url = e.currentTarget.dataset.url;
+    if (url) {
+      wx.setClipboardData({
+        data: url,
+        success: function () {
+          wx.showToast({
+            title: '链接已复制',
+            icon: 'success',
+            duration: 1500
+          });
+        }
+      });
+    }
   }
 }) 

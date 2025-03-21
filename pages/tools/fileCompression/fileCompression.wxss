@@ -174,6 +174,8 @@
     color: #1890ff;
     word-break: break-all;
     max-width: 500rpx;
+    text-decoration: underline;
+    cursor: pointer;
 }
 
 .download-button {
@@ -214,7 +216,7 @@
 
 .debug-title {
     font-size: 28rpx;
-    font-weight: 500;
+    font-weight: bold;
     color: #666;
     margin-bottom: 10rpx;
 }
@@ -222,6 +224,11 @@
 .debug-content {
     font-size: 24rpx;
     color: #999;
-    line-height: 1.6;
-    word-break: break-all;
+    margin-top: 10rpx;
+}
+
+.debug-url {
+    color: #1890ff;
+    text-decoration: underline;
+    cursor: pointer;
 }

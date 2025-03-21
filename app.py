@@ -23,9 +23,14 @@ import re
 import string
 import sys
 import hashlib
+import PyPDF2
 
 app = Flask(__name__)
 CORS(app)
+
+# 全局配置临时文件夹，确保它存在
+app.config['TEMP_FOLDER'] = os.path.join(os.path.dirname(__file__), 'temp')
+os.makedirs(app.config['TEMP_FOLDER'], exist_ok=True)
 
 # 配置文件上传
 UPLOAD_FOLDER = 'uploads'
@@ -1074,7 +1079,331 @@ def urls_to_pdf():
         response.headers['Content-Type'] = 'application/json'
         return response, 500
 
+# =============== PDF拆分合并功能 ===============
+
+@app.route('/api/pdf/upload', methods=['POST'])
+def pdf_upload():
+    try:
+        # 检查是否收到文件
+        if 'file' not in request.files:
+            return jsonify({
+                'success': False,
+                'message': '未接收到文件'
+            }), 400
+        
+        file = request.files['file']
+        
+        # 检查文件是否为PDF
+        if not file.filename.lower().endswith('.pdf'):
+            return jsonify({
+                'success': False,
+                'message': '只支持PDF文件'
+            }), 400
+        
+        # 生成唯一文件ID
+        file_id = f"{int(time.time())}-{uuid.uuid4().hex[:8]}"
+        
+        # 保存文件到临时目录
+        temp_path = os.path.join(app.config['TEMP_FOLDER'], f"{file_id}.pdf")
+        file.save(temp_path)
+        
+        # 处理上传后的操作
+        operation = request.form.get('operation', '')
+        index = request.form.get('index', '0')
+        
+        return jsonify({
+            'success': True,
+            'fileId': file_id,
+            'operation': operation,
+            'index': index
+        })
+        
+    except Exception as e:
+        error_msg = f"PDF上传失败: {str(e)}"
+        print(error_msg)
+        return jsonify({
+            'success': False,
+            'message': error_msg
+        }), 500
+
+@app.route('/api/pdf/analyze', methods=['POST'])
+def pdf_analyze():
+    try:
+        # 检查是否有文件
+        if 'file' not in request.files:
+            return jsonify({
+                "success": False,
+                "message": "未上传文件"
+            }), 400
+            
+        file = request.files['file']
+        
+        # 检查文件类型
+        if not file.filename.lower().endswith('.pdf'):
+            return jsonify({
+                "success": False,
+                "message": "请上传PDF文件"
+            }), 400
+            
+        # 生成文件ID
+        file_id = f"{int(time.time())}-{uuid.uuid4().hex[:8]}"
+        
+        # 保存文件
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['TEMP_FOLDER'], f"{file_id}_{filename}")
+        file.save(file_path)
+        
+        # 分析PDF页数
+        try:
+            # 兼容PyPDF2不同版本
+            try:
+                # 新版本的PyPDF2
+                with open(file_path, 'rb') as pdf_file:
+                    pdf = PyPDF2.PdfReader(pdf_file)
+                    page_count = len(pdf.pages)
+            except:
+                # 旧版本的PyPDF2
+                with open(file_path, 'rb') as pdf_file:
+                    pdf = PyPDF2.PdfFileReader(pdf_file)
+                    page_count = pdf.getNumPages()
+                    
+            return jsonify({
+                "success": True,
+                "fileId": file_id,
+                "pageCount": page_count
+            }), 200
+            
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "message": f"无法分析PDF: {str(e)}"
+            }), 400
+            
+    except Exception as e:
+        print(f"PDF分析错误: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": f"处理PDF时发生错误: {str(e)}"
+        }), 500
+
+@app.route('/api/pdf/merge', methods=['POST'])
+def pdf_merge():
+    try:
+        # 获取请求数据
+        data = request.json
+        if not data or not data.get('files'):
+            return jsonify({
+                'success': False,
+                'message': '未提供文件ID列表'
+            }), 400
+        
+        file_ids = data.get('files', [])
+        output_filename = data.get('filename', 'merged.pdf')
+        
+        if not file_ids:
+            return jsonify({
+                'success': False,
+                'message': '文件列表为空'
+            }), 400
+            
+        # 合并PDF
+        merger = PyPDF2.PdfMerger()
+        
+        for file_id in file_ids:
+            pdf_path = os.path.join(app.config['TEMP_FOLDER'], f"{file_id}.pdf")
+            if os.path.exists(pdf_path):
+                merger.append(pdf_path)
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': f'文件不存在: {file_id}.pdf'
+                }), 404
+        
+        # 生成输出文件名
+        output_id = str(uuid.uuid4())
+        output_path = os.path.join(app.config['OUTPUT_FOLDER'], f"{output_id}.pdf")
+        
+        # 写入合并后的PDF
+        merger.write(output_path)
+        merger.close()
+        
+        # 获取文件大小
+        file_size = os.path.getsize(output_path)
+        file_size_str = format_file_size(file_size)
+        
+        # 生成下载URL
+        pdf_url = f"{request.host_url.rstrip('/')}/download/{output_id}.pdf"
+        
+        return jsonify({
+            'success': True,
+            'pdfUrl': pdf_url,
+            'fileSize': file_size_str
+        })
+        
+    except Exception as e:
+        error_msg = f"PDF合并失败: {str(e)}"
+        print(error_msg)
+        return jsonify({
+            'success': False,
+            'message': error_msg
+        }), 500
+
+@app.route('/api/pdf/split', methods=['POST'])
+def pdf_split():
+    try:
+        # 获取文件ID和范围
+        data = request.json
+        if not data or 'fileId' not in data:
+            return jsonify({"error": "缺少文件ID"}), 400
+            
+        file_id = data['fileId']
+        ranges = data.get('ranges', [])
+        
+        if not ranges or len(ranges) == 0:
+            return jsonify({"error": "缺少拆分范围"}), 400
+            
+        # 查找文件
+        file_path = None
+        for root, dirs, files in os.walk(app.config['TEMP_FOLDER']):
+            for file in files:
+                if file.startswith(file_id):
+                    file_path = os.path.join(root, file)
+                    break
+            if file_path:
+                break
+                
+        if not file_path:
+            return jsonify({"error": "文件不存在或已过期"}), 404
+            
+        # 创建输出目录
+        output_dir = os.path.join(app.config['TEMP_FOLDER'], f"split_{int(time.time())}")
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # 打开PDF文件
+        try:
+            # 兼容PyPDF2不同版本
+            try:
+                # 新版本的PyPDF2
+                with open(file_path, 'rb') as pdf_file:
+                    pdf = PyPDF2.PdfReader(pdf_file)
+                    total_pages = len(pdf.pages)
+                    
+                    # 处理每个范围
+                    output_files = []
+                    for i, page_range in enumerate(ranges):
+                        start = page_range.get('start', 0)
+                        end = page_range.get('end', 0)
+                        
+                        if start < 1 or end > total_pages or start > end:
+                            return jsonify({"error": f"范围 {i+1} ({start}-{end}) 无效，PDF共有 {total_pages} 页"}), 400
+                        
+                        output = PyPDF2.PdfWriter()
+                        
+                        # 添加页面
+                        for page_num in range(start-1, end):
+                            output.add_page(pdf.pages[page_num])
+                            
+                        # 保存拆分后的PDF
+                        output_filename = f"split_{i+1}_{start}-{end}.pdf"
+                        output_path = os.path.join(output_dir, output_filename)
+                        
+                        with open(output_path, 'wb') as output_file:
+                            output.write(output_file)
+                            
+                        output_files.append(output_path)
+            except:
+                # 旧版本的PyPDF2
+                with open(file_path, 'rb') as pdf_file:
+                    pdf = PyPDF2.PdfFileReader(pdf_file)
+                    total_pages = pdf.getNumPages()
+                    
+                    # 处理每个范围
+                    output_files = []
+                    for i, page_range in enumerate(ranges):
+                        start = page_range.get('start', 0)
+                        end = page_range.get('end', 0)
+                        
+                        if start < 1 or end > total_pages or start > end:
+                            return jsonify({"error": f"范围 {i+1} ({start}-{end}) 无效，PDF共有 {total_pages} 页"}), 400
+                        
+                        output = PyPDF2.PdfFileWriter()
+                        
+                        # 添加页面
+                        for page_num in range(start-1, end):
+                            output.addPage(pdf.getPage(page_num))
+                            
+                        # 保存拆分后的PDF
+                        output_filename = f"split_{i+1}_{start}-{end}.pdf"
+                        output_path = os.path.join(output_dir, output_filename)
+                        
+                        with open(output_path, 'wb') as output_file:
+                            output.write(output_file)
+                            
+                        output_files.append(output_path)
+            
+            # 创建ZIP文件
+            timestamp = int(time.time())
+            zip_filename = f"split_pdf_{timestamp}.zip"
+            zip_path = os.path.join(app.config['OUTPUT_FOLDER'], zip_filename)
+            
+            with zipfile.ZipFile(zip_path, 'w') as zipf:
+                for file in output_files:
+                    zipf.write(file, os.path.basename(file))
+                    
+            # 删除临时文件夹
+            shutil.rmtree(output_dir)
+            
+            # 返回下载链接
+            download_url = f"/download/{zip_filename}"
+            return jsonify({
+                "success": True,
+                "zipUrl": request.host_url.rstrip('/') + download_url,
+                "fileCount": len(output_files),
+                "totalSize": format_file_size(os.path.getsize(zip_path))
+            }), 200
+        
+        except Exception as e:
+            return jsonify({
+                "success": False,
+                "message": f"处理PDF时出错: {str(e)}"
+            }), 400
+        
+    except Exception as e:
+        print(f"PDF拆分错误: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": f"处理PDF时发生错误: {str(e)}"
+        }), 500
+
+# 格式化文件大小的辅助函数
+def format_file_size(size_bytes):
+    """将字节数转换为可读的文件大小字符串"""
+    if size_bytes < 1024:
+        return f"{size_bytes} B"
+    elif size_bytes < 1024 * 1024:
+        return f"{size_bytes/1024:.2f} KB"
+    elif size_bytes < 1024 * 1024 * 1024:
+        return f"{size_bytes/(1024*1024):.2f} MB"
+    else:
+        return f"{size_bytes/(1024*1024*1024):.2f} GB"
+
+# 原before_first_request函数改为普通函数
+def ensure_temp_folder_exists():
+    # 确保临时文件夹存在
+    if not os.path.exists(app.config['TEMP_FOLDER']):
+        os.makedirs(app.config['TEMP_FOLDER'])
+    if not os.path.exists(app.config['OUTPUT_FOLDER']):
+        os.makedirs(app.config['OUTPUT_FOLDER'])
+    if not os.path.exists(app.config['UPLOAD_FOLDER']):
+        os.makedirs(app.config['UPLOAD_FOLDER'])
+
+# 在应用启动前直接调用
+ensure_temp_folder_exists()
+
 # =============== 启动服务 ===============
 
 if __name__ == '__main__':
+    # 确保所有必要的文件夹都存在
+    with app.app_context():
+        ensure_temp_folder_exists()
     app.run(host='0.0.0.0', port=5000, debug=False) 

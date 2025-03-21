@@ -492,5 +492,22 @@ Page({
                 }
             });
         });
+    },
+
+    // 复制链接到剪贴板
+    copyLink: function (e) {
+        const url = e.currentTarget.dataset.url;
+        if (url) {
+            wx.setClipboardData({
+                data: url,
+                success: function () {
+                    wx.showToast({
+                        title: '链接已复制',
+                        icon: 'success',
+                        duration: 1500
+                    });
+                }
+            });
+        }
     }
 }) 

@@ -34,7 +34,9 @@
         </view>
         <view class="result-item" wx:if="{{result.pdfUrl}}">
           <view class="item-label">文件链接:</view>
-          <view class="item-value file-url">{{result.pdfUrl}}</view>
+          <view class="item-value file-url" bindtap="copyLink" data-url="{{result.pdfUrl}}">
+            {{result.pdfUrl}}
+          </view>
         </view>
       </view>
       <button class="btn-primary download-button" bindtap="downloadPdf">下载PDF文件</button>
@@ -55,10 +57,15 @@
     <view class="debug-content">
       <view>服务器: excel.sube.top</view>
       <view>图片数量: {{images.length}}</view>
-      <view wx:if="{{result}}">PDF URL: {{result.pdfUrl}}</view>
+      <view wx:if="{{result}}">
+        PDF URL:
+        <text class="debug-url" bindtap="copyLink" data-url="{{result.pdfUrl}}">
+          {{result.pdfUrl}}
+        </text>
+      </view>
       <view>环境: {{isIOS ? 'iOS' : (isAndroid ? 'Android' : '其他')}}</view>
       <view>小程序版本: 当前</view>
       <view>网络状态: {{networkType || '未知'}}</view>
     </view>
   </view>
-</view> 
+</view>

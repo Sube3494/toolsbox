@@ -1,0 +1,355 @@
+/* pages/tools/pdfSplitMerge/pdfSplitMerge.wxss */
+.container {
+  padding: 30rpx;
+  box-sizing: border-box;
+}
+
+.header {
+  width: 100%;
+  margin-bottom: 30rpx;
+}
+
+.title {
+  font-size: 44rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.subtitle {
+  font-size: 28rpx;
+  color: #666;
+  margin-top: 10rpx;
+}
+
+.tabs {
+  display: flex;
+  width: 100%;
+  background: #fff;
+  border-radius: 10rpx;
+  margin-bottom: 30rpx;
+  overflow: hidden;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+
+.tab {
+  flex: 1;
+  text-align: center;
+  padding: 24rpx 0;
+  font-size: 30rpx;
+  color: #666;
+  position: relative;
+  transition: all 0.3s;
+}
+
+.tab.active {
+  color: #409eff;
+  font-weight: bold;
+}
+
+.tab.active:after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40%;
+  height: 6rpx;
+  background: #409eff;
+  border-radius: 3rpx;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12rpx;
+  padding: 30rpx;
+  margin-bottom: 30rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+
+.tool-content {
+  width: 100%;
+}
+
+.info-text {
+  font-size: 28rpx;
+  color: #666;
+  margin-bottom: 30rpx;
+}
+
+.files-list, .file-selected {
+  width: 100%;
+  margin-bottom: 30rpx;
+}
+
+.file-item, .file-selected {
+  display: flex;
+  padding: 20rpx;
+  background: #f9f9f9;
+  border-radius: 8rpx;
+  margin-bottom: 20rpx;
+  position: relative;
+  align-items: center;
+}
+
+.file-icon {
+  width: 80rpx;
+  height: 80rpx;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #e74c3c;
+  color: #fff;
+  font-size: 24rpx;
+  font-weight: bold;
+  border-radius: 8rpx;
+  margin-right: 20rpx;
+}
+
+.file-info {
+  flex: 1;
+  overflow: hidden;
+}
+
+.file-name {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-size, .file-pages {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 6rpx;
+}
+
+.file-actions {
+  display: flex;
+  align-items: center;
+}
+
+.file-move-up, .file-move-down {
+  width: 50rpx;
+  height: 50rpx;
+  line-height: 50rpx;
+  text-align: center;
+  color: #666;
+  font-weight: bold;
+  margin-right: 10rpx;
+}
+
+.file-delete {
+  width: 50rpx;
+  height: 50rpx;
+  line-height: 50rpx;
+  text-align: center;
+  color: #e74c3c;
+  font-size: 36rpx;
+  font-weight: bold;
+}
+
+.error-text {
+  color: #e74c3c;
+  font-size: 26rpx;
+  margin-bottom: 20rpx;
+}
+
+.button-group {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 30rpx;
+}
+
+.btn-primary {
+  flex: 1;
+  margin: 0 10rpx;
+  background: #409eff;
+  color: #fff;
+  font-size: 28rpx;
+  border: none;
+  border-radius: 8rpx;
+}
+
+.btn-primary:first-child {
+  margin-left: 0;
+}
+
+.btn-primary:last-child {
+  margin-right: 0;
+}
+
+.btn-primary[disabled] {
+  background: #cccccc;
+  color: #ffffff;
+}
+
+.choose-button {
+  background: #67c23a;
+}
+
+.split-method {
+  margin-top: 30rpx;
+  margin-bottom: 20rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  color: #333;
+  font-weight: 500;
+  margin-bottom: 15rpx;
+}
+
+.split-group {
+  display: flex;
+}
+
+.split-option {
+  display: flex;
+  align-items: center;
+  margin-right: 30rpx;
+  font-size: 28rpx;
+  color: #666;
+}
+
+.range-inputs {
+  margin-top: 20rpx;
+}
+
+.range-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15rpx;
+}
+
+.range-input {
+  width: 140rpx;
+  height: 70rpx;
+  background: #f5f5f5;
+  border-radius: 8rpx;
+  padding: 0 20rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.range-separator {
+  margin: 0 20rpx;
+  color: #666;
+}
+
+.range-delete {
+  width: 50rpx;
+  height: 50rpx;
+  line-height: 50rpx;
+  text-align: center;
+  color: #e74c3c;
+  font-size: 36rpx;
+  font-weight: bold;
+  margin-left: 20rpx;
+}
+
+.btn-small {
+  width: auto;
+  padding: 0 30rpx;
+  height: 70rpx;
+  line-height: 70rpx;
+  font-size: 26rpx;
+  margin-top: 10rpx;
+  background: #f0f0f0;
+  color: #666;
+}
+
+.add-range-btn {
+  margin-top: 10rpx;
+}
+
+.result-container {
+  margin-top: 30rpx;
+  padding-top: 30rpx;
+  border-top: 1px solid #eee;
+}
+
+.result-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.result-info {
+  margin-bottom: 30rpx;
+}
+
+.result-item {
+  display: flex;
+  margin-bottom: 15rpx;
+}
+
+.item-label {
+  font-size: 26rpx;
+  color: #666;
+  width: 160rpx;
+}
+
+.item-value {
+  font-size: 26rpx;
+  color: #333;
+  font-weight: 500;
+}
+
+.file-url {
+  font-size: 24rpx;
+  color: #1890ff;
+  word-break: break-all;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.download-button {
+  width: 100%;
+}
+
+.tips {
+  width: 100%;
+}
+
+.tips-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 20rpx;
+}
+
+.tips-list {
+  font-size: 26rpx;
+  color: #666;
+}
+
+.tips-item {
+  margin-bottom: 10rpx;
+  line-height: 1.5;
+}
+
+.debug-info {
+  margin-top: 30rpx;
+}
+
+.debug-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #666;
+  margin-bottom: 10rpx;
+}
+
+.debug-content {
+  font-size: 24rpx;
+  color: #999;
+  margin-top: 10rpx;
+}
+
+.debug-url {
+  color: #1890ff;
+  text-decoration: underline;
+  cursor: pointer;
+} 

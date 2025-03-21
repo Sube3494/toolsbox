@@ -1,0 +1,174 @@
+<!-- pages/tools/pdfSplitMerge/pdfSplitMerge.wxml -->
+<view class="container">
+    <view class="header">
+        <view class="title">PDF拆分合并</view>
+        <view class="subtitle">拆分或合并PDF文件</view>
+    </view>
+    <!-- 选项卡切换 -->
+    <view class="tabs">
+        <view class="tab {{activeTab === 'merge' ? 'active' : ''}}" bindtap="switchTab" data-tab="merge">
+            PDF合并
+        </view>
+        <view class="tab {{activeTab === 'split' ? 'active' : ''}}" bindtap="switchTab" data-tab="split">
+            PDF拆分
+        </view>
+    </view>
+    <!-- PDF合并功能 -->
+    <view class="tool-content card" wx:if="{{activeTab === 'merge'}}">
+        <view class="info-text">选择多个PDF文件，合并为一个PDF文档</view>
+        <view class="files-list" wx:if="{{mergeFiles.length > 0}}">
+            <view class="file-item" wx:for="{{mergeFiles}}" wx:key="index">
+                <view class="file-icon">PDF</view>
+                <view class="file-info">
+                    <view class="file-name">{{item.name}}</view>
+                    <view class="file-size">{{item.size}}</view>
+                </view>
+                <view class="file-actions">
+                    <view class="file-move-up" bindtap="moveFileUp" data-index="{{index}}" wx:if="{{index > 0}}">
+                        ↑
+                    </view>
+                    <view class="file-move-down" bindtap="moveFileDown" data-index="{{index}}" wx:if="{{index < mergeFiles.length-1}}">
+                        ↓
+                    </view>
+                    <view class="file-delete" bindtap="deleteFile" data-tab="merge" data-index="{{index}}">
+                        ×
+                    </view>
+                </view>
+            </view>
+        </view>
+        <view class="error-text" wx:if="{{mergeErrorMsg}}">{{mergeErrorMsg}}</view>
+        <view class="button-group">
+            <button class="btn-primary choose-button" bindtap="chooseMergeFiles">
+                {{mergeFiles.length > 0 ? '添加更多文件' : '选择PDF文件'}}
+            </button>
+            <button class="btn-primary process-button" bindtap="mergeFiles" disabled="{{mergeFiles.length < 2 || processing}}" loading="{{processing && activeTab === 'merge'}}">
+                开始合并
+            </button>
+        </view>
+        <view class="result-container" wx:if="{{mergeResult}}">
+            <view class="result-title">处理结果</view>
+            <view class="result-info">
+                <view class="result-item">
+                    <view class="item-label">合并文件数:</view>
+                    <view class="item-value">{{mergeFiles.length}}</view>
+                </view>
+                <view class="result-item">
+                    <view class="item-label">PDF大小:</view>
+                    <view class="item-value">{{mergeResult.fileSize || '未知'}}</view>
+                </view>
+                <view class="result-item" wx:if="{{mergeResult.pdfUrl}}">
+                    <view class="item-label">文件链接:</view>
+                    <view class="item-value file-url" bindtap="copyLink" data-url="{{mergeResult.pdfUrl}}">
+                        {{mergeResult.pdfUrl}}
+                    </view>
+                </view>
+            </view>
+            <button class="btn-primary download-button" bindtap="downloadMergedPdf">下载合并PDF</button>
+        </view>
+    </view>
+    <!-- PDF拆分功能 -->
+    <view class="tool-content card" wx:if="{{activeTab === 'split'}}">
+        <view class="info-text">选择一个PDF文件，按页码范围拆分为多个文件</view>
+        <view class="file-selected" wx:if="{{splitFile}}">
+            <view class="file-icon">PDF</view>
+            <view class="file-info">
+                <view class="file-name">{{splitFile.name}}</view>
+                <view class="file-size">{{splitFile.size}}</view>
+                <view class="file-pages" wx:if="{{splitFile.pageCount}}">
+                    总页数: {{splitFile.pageCount}}
+                </view>
+            </view>
+            <view class="file-delete" bindtap="clearSplitFile">×</view>
+        </view>
+        <view class="split-options" wx:if="{{splitFile && splitFile.pageCount}}">
+            <view class="split-method">
+                <view class="section-title">拆分方式：</view>
+                <radio-group class="split-group" bindchange="splitMethodChange">
+                    <label class="split-option">
+                        <radio value="range" checked="{{splitMethod === 'range'}}" />
+                        页码范围拆分
+                    </label>
+                    <label class="split-option">
+                        <radio value="single" checked="{{splitMethod === 'single'}}" />
+                        单页拆分
+                    </label>
+                </radio-group>
+            </view>
+            <block wx:if="{{splitMethod === 'range'}}">
+                <view class="range-inputs">
+                    <view class="range-item" wx:for="{{splitRanges}}" wx:key="index">
+                        <input type="number" class="range-input" placeholder="起始页" value="{{item.start}}" data-index="{{index}}" data-type="start" bindinput="onRangeChange" />
+                        <text class="range-separator">-</text>
+                        <input type="number" class="range-input" placeholder="结束页" value="{{item.end}}" data-index="{{index}}" data-type="end" bindinput="onRangeChange" />
+                        <view class="range-delete" bindtap="deleteRange" data-index="{{index}}" wx:if="{{splitRanges.length > 1}}">
+                            ×
+                        </view>
+                    </view>
+                    <button class="btn-small add-range-btn" bindtap="addRange">添加范围</button>
+                </view>
+            </block>
+        </view>
+        <view class="error-text" wx:if="{{splitErrorMsg}}">{{splitErrorMsg}}</view>
+        <view class="button-group">
+            <button class="btn-primary choose-button" bindtap="chooseSplitFile" wx:if="{{!splitFile}}">
+                选择PDF文件
+            </button>
+            <button class="btn-primary process-button" bindtap="splitPdf" disabled="{{!splitFile || processing}}" loading="{{processing && activeTab === 'split'}}">
+                开始拆分
+            </button>
+        </view>
+        <view class="result-container" wx:if="{{splitResult}}">
+            <view class="result-title">处理结果</view>
+            <view class="result-info">
+                <view class="result-item">
+                    <view class="item-label">拆分文件数:</view>
+                    <view class="item-value">{{splitResult.fileCount || splitRanges.length}}</view>
+                </view>
+                <view class="result-item" wx:if="{{splitResult.fileSize}}">
+                    <view class="item-label">总大小:</view>
+                    <view class="item-value">{{splitResult.fileSize}}</view>
+                </view>
+                <view class="result-item" wx:if="{{splitResult.zipUrl}}">
+                    <view class="item-label">打包下载:</view>
+                    <view class="item-value file-url" bindtap="copyLink" data-url="{{splitResult.zipUrl}}">
+                        {{splitResult.zipUrl}}
+                    </view>
+                </view>
+            </view>
+            <button class="btn-primary download-button" bindtap="downloadSplitZip">
+                下载拆分文件(ZIP)
+            </button>
+        </view>
+    </view>
+    <view class="tips card">
+        <view class="tips-title">使用提示</view>
+        <view class="tips-list">
+            <view class="tips-item">1. PDF合并：支持多个PDF文件合并为一个</view>
+            <view class="tips-item">2. PDF拆分：可按页码范围拆分或单页提取</view>
+            <view class="tips-item">3. 拆分后的PDF将打包下载为ZIP格式</view>
+            <view class="tips-item">4. 单个文件最大支持20MB</view>
+        </view>
+    </view>
+    <!-- 调试信息区域 -->
+    <view class="debug-info card">
+        <view class="debug-title">调试信息</view>
+        <view class="debug-content">
+            <view>服务器: excel.sube.top</view>
+            <view wx:if="{{activeTab === 'merge'}}">合并文件数: {{mergeFiles.length}}</view>
+            <view wx:if="{{activeTab === 'split' && splitFile}}">拆分文件: {{splitFile.name}}</view>
+            <view wx:if="{{mergeResult && activeTab === 'merge'}}">
+                合并PDF URL:
+                <text class="debug-url" bindtap="copyLink" data-url="{{mergeResult.pdfUrl}}">
+                    {{mergeResult.pdfUrl}}
+                </text>
+            </view>
+            <view wx:if="{{splitResult && activeTab === 'split'}}">
+                拆分ZIP URL:
+                <text class="debug-url" bindtap="copyLink" data-url="{{splitResult.zipUrl}}">
+                    {{splitResult.zipUrl}}
+                </text>
+            </view>
+            <view>网络状态: {{networkType || '未知'}}</view>
+        </view>
+    </view>
+</view>

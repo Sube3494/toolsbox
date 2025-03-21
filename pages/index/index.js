@@ -31,6 +31,13 @@ Page({
                 path: '/pages/tools/pdfToWord/pdfToWord'
             },
             {
+                id: 'pdfSplitMerge',
+                name: 'PDF拆分合并',
+                icon: '/images/icons/pdfSplitMerge.svg', // 改为本地文件路径
+                description: '拆分或合并PDF文件',
+                path: '/pages/tools/pdfSplitMerge/pdfSplitMerge'
+            },
+            {
                 id: 'textCompare',
                 name: '文本比较工具',
                 icon: '/images/icons/textCompare.svg', // 改为本地文件路径

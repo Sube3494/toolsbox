@@ -81,7 +81,9 @@
                 </view>
                 <view class="result-item" wx:if="{{result.downloadUrl}}">
                     <view class="item-label">文件链接:</view>
-                    <view class="item-value file-url">{{result.downloadUrl}}</view>
+                    <view class="item-value file-url" bindtap="copyLink" data-url="{{result.downloadUrl}}">
+                        {{result.downloadUrl}}
+                    </view>
                 </view>
             </view>
             <button class="btn-primary download-button" bindtap="downloadZip">下载压缩包</button>
@@ -103,7 +105,12 @@
         <view class="debug-content">
             <view>服务器: excel.sube.top</view>
             <view>文件数量: {{files.length}}</view>
-            <view wx:if="{{result}}">压缩包URL: {{result.downloadUrl}}</view>
+            <view wx:if="{{result}}">
+                压缩包URL:
+                <text class="debug-url" bindtap="copyLink" data-url="{{result.downloadUrl}}">
+                    {{result.downloadUrl}}
+                </text>
+            </view>
             <view>环境: {{isIOS ? 'iOS' : (isAndroid ? 'Android' : '其他')}}</view>
             <view>小程序版本: 当前</view>
             <view>网络状态: {{networkType || '未知'}}</view>
