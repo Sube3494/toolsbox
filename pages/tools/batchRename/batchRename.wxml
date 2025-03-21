@@ -95,25 +95,8 @@
         <view class="tips-list">
             <view class="tips-item">1. 支持从聊天、相机或相册选择文件和图片</view>
             <view class="tips-item">2. 可以单独编辑每个文件名或批量应用规则</view>
-            <view class="tips-item">3. 文件将保持原有格式，仅重命名</view>
-            <view class="tips-item">4. 所有文件将打包为ZIP格式下载</view>
-        </view>
-    </view>
-    <!-- 调试信息区域 -->
-    <view class="debug-info card">
-        <view class="debug-title">调试信息</view>
-        <view class="debug-content">
-            <view>服务器: excel.sube.top</view>
-            <view>文件数量: {{files.length}}</view>
-            <view wx:if="{{result}}">
-                压缩包URL:
-                <text class="debug-url" bindtap="copyLink" data-url="{{result.downloadUrl}}">
-                    {{result.downloadUrl}}
-                </text>
-            </view>
-            <view>环境: {{isIOS ? 'iOS' : (isAndroid ? 'Android' : '其他')}}</view>
-            <view>小程序版本: 当前</view>
-            <view>网络状态: {{networkType || '未知'}}</view>
+            <view class="tips-item">3. 可以使用通配符和正则表达式</view>
+            <view class="tips-item">4. 重命名后将提供ZIP格式下载</view>
         </view>
     </view>
 </view>

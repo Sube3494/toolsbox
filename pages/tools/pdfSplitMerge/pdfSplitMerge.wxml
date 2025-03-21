@@ -1,4 +1,7 @@
 <!-- pages/tools/pdfSplitMerge/pdfSplitMerge.wxml -->
+<view wx:if="{{networkType === 'none'}}" class="network-warning">
+    <text>网络连接已断开，请检查网络设置</text>
+</view>
 <view class="container">
     <view class="header">
         <view class="title">PDF拆分合并</view>
@@ -39,9 +42,9 @@
         <view class="error-text" wx:if="{{mergeErrorMsg}}">{{mergeErrorMsg}}</view>
         <view class="button-group">
             <button class="btn-primary choose-button" bindtap="chooseMergeFiles">
-                {{mergeFiles.length > 0 ? '添加更多文件' : '选择PDF文件'}}
+                {{mergeFiles.length > 0 ? '添加更多PDF' : '选择PDF文件'}}
             </button>
-            <button class="btn-primary process-button" bindtap="mergeFiles" disabled="{{mergeFiles.length < 2 || processing}}" loading="{{processing && activeTab === 'merge'}}">
+            <button class="btn-primary process-button" bindtap="mergeFiles" disabled="{{mergeFiles.length < 2 || processing || networkType === 'none'}}" loading="{{processing}}">
                 开始合并
             </button>
         </view>
@@ -49,21 +52,17 @@
             <view class="result-title">处理结果</view>
             <view class="result-info">
                 <view class="result-item">
-                    <view class="item-label">合并文件数:</view>
-                    <view class="item-value">{{mergeFiles.length}}</view>
+                    <view class="item-label">文件大小:</view>
+                    <view class="item-value">{{mergeResult.fileSize}}</view>
                 </view>
                 <view class="result-item">
-                    <view class="item-label">PDF大小:</view>
-                    <view class="item-value">{{mergeResult.fileSize || '未知'}}</view>
-                </view>
-                <view class="result-item" wx:if="{{mergeResult.pdfUrl}}">
-                    <view class="item-label">文件链接:</view>
+                    <view class="item-label">下载链接:</view>
                     <view class="item-value file-url" bindtap="copyLink" data-url="{{mergeResult.pdfUrl}}">
                         {{mergeResult.pdfUrl}}
                     </view>
                 </view>
             </view>
-            <button class="btn-primary download-button" bindtap="downloadMergedPdf">下载合并PDF</button>
+            <button class="btn-primary download-button" bindtap="downloadMergedPdf">下载PDF</button>
         </view>
     </view>
     <!-- PDF拆分功能 -->
@@ -113,7 +112,7 @@
             <button class="btn-primary choose-button" bindtap="chooseSplitFile" wx:if="{{!splitFile}}">
                 选择PDF文件
             </button>
-            <button class="btn-primary process-button" bindtap="splitPdf" disabled="{{!splitFile || processing}}" loading="{{processing && activeTab === 'split'}}">
+            <button class="btn-primary process-button" bindtap="splitPdf" disabled="{{!splitFile || processing || networkType === 'none'}}" loading="{{processing}}">
                 开始拆分
             </button>
         </view>
@@ -121,23 +120,21 @@
             <view class="result-title">处理结果</view>
             <view class="result-info">
                 <view class="result-item">
-                    <view class="item-label">拆分文件数:</view>
-                    <view class="item-value">{{splitResult.fileCount || splitRanges.length}}</view>
+                    <view class="item-label">文件数量:</view>
+                    <view class="item-value">{{splitResult.fileCount}}个文件</view>
                 </view>
-                <view class="result-item" wx:if="{{splitResult.fileSize}}">
-                    <view class="item-label">总大小:</view>
+                <view class="result-item">
+                    <view class="item-label">文件大小:</view>
                     <view class="item-value">{{splitResult.fileSize}}</view>
                 </view>
-                <view class="result-item" wx:if="{{splitResult.zipUrl}}">
-                    <view class="item-label">打包下载:</view>
+                <view class="result-item">
+                    <view class="item-label">下载链接:</view>
                     <view class="item-value file-url" bindtap="copyLink" data-url="{{splitResult.zipUrl}}">
                         {{splitResult.zipUrl}}
                     </view>
                 </view>
             </view>
-            <button class="btn-primary download-button" bindtap="downloadSplitZip">
-                下载拆分文件(ZIP)
-            </button>
+            <button class="btn-primary download-button" bindtap="downloadSplitZip">下载ZIP</button>
         </view>
     </view>
     <view class="tips card">
@@ -147,28 +144,6 @@
             <view class="tips-item">2. PDF拆分：可按页码范围拆分或单页提取</view>
             <view class="tips-item">3. 拆分后的PDF将打包下载为ZIP格式</view>
             <view class="tips-item">4. 单个文件最大支持20MB</view>
-        </view>
-    </view>
-    <!-- 调试信息区域 -->
-    <view class="debug-info card">
-        <view class="debug-title">调试信息</view>
-        <view class="debug-content">
-            <view>服务器: excel.sube.top</view>
-            <view wx:if="{{activeTab === 'merge'}}">合并文件数: {{mergeFiles.length}}</view>
-            <view wx:if="{{activeTab === 'split' && splitFile}}">拆分文件: {{splitFile.name}}</view>
-            <view wx:if="{{mergeResult && activeTab === 'merge'}}">
-                合并PDF URL:
-                <text class="debug-url" bindtap="copyLink" data-url="{{mergeResult.pdfUrl}}">
-                    {{mergeResult.pdfUrl}}
-                </text>
-            </view>
-            <view wx:if="{{splitResult && activeTab === 'split'}}">
-                拆分ZIP URL:
-                <text class="debug-url" bindtap="copyLink" data-url="{{splitResult.zipUrl}}">
-                    {{splitResult.zipUrl}}
-                </text>
-            </view>
-            <view>网络状态: {{networkType || '未知'}}</view>
         </view>
     </view>
 </view>

@@ -63,14 +63,4 @@
       <view class="tips-item">4. 点击查看详细对比可查看完整差异内容</view>
     </view>
   </view>
-  <view class="debug-info card">
-    <view class="debug-title">调试信息</view>
-    <view class="debug-content">
-      <view>服务器: excel.sube.top</view>
-      <view>文本1长度: {{text1.length}} 字符</view>
-      <view>文本2长度: {{text2.length}} 字符</view>
-      <view wx:if="{{result}}">结果URL: {{result.resultUrl}}</view>
-      <view>网络状态: {{networkType || '未知'}}</view>
-    </view>
-  </view>
 </view>

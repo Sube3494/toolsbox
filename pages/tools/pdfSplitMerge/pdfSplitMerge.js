@@ -644,9 +644,9 @@ Page({
           this.setData({
             processing: false,
             splitResult: {
-              zipUrl: 'https://excel.sube.top' + res.data.url,
-              fileCount: ranges.length,
-              fileSize: '未知' // 后端不再返回文件大小信息
+              zipUrl: res.data.zipUrl,
+              fileCount: res.data.fileCount || ranges.length,
+              fileSize: res.data.totalSize || '未知'
             }
           });
 

@@ -71,19 +71,4 @@
             <view class="tips-item">4. 单个文件最大支持20MB</view>
         </view>
     </view>
-    <view class="debug-info card">
-        <view class="debug-title">调试信息</view>
-        <view class="debug-content">
-            <view>服务器: excel.sube.top</view>
-            <view>文件数量: {{files.length}}</view>
-            <view>压缩格式: {{format}}</view>
-            <view wx:if="{{result}}">
-                下载URL:
-                <text class="debug-url" bindtap="copyLink" data-url="{{result.fileUrl}}">
-                    {{result.fileUrl}}
-                </text>
-            </view>
-            <view>网络状态: {{networkType || '未知'}}</view>
-        </view>
-    </view>
 </view>
