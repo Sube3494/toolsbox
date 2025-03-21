@@ -76,6 +76,12 @@
           "pathName": "pages/tools/imageToExcel/imageToExcel",
           "query": "",
           "scene": null
+        },
+        {
+          "name": "Markdown转Word",
+          "pathName": "pages/tools/mdToWord/mdToWord",
+          "query": "",
+          "scene": null
         }
       ]
     }

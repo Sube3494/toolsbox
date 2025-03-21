@@ -13,17 +13,11 @@ from paddleocr import PaddleOCR
 from io import BytesIO
 from pdf2docx import Converter
 import difflib
-import json
-import base64
 import zipfile
 import py7zr
 import shutil
-import datetime
-import re
-import string
-import sys
-import hashlib
 import PyPDF2
+import threading
 
 app = Flask(__name__)
 CORS(app)
@@ -149,12 +143,6 @@ def image_to_excel():
             
         except Exception as e:
             return jsonify({'success': False, 'message': f'处理表格失败: {str(e)}'}), 500
-        finally:
-            # 清理上传的图片
-            try:
-                os.remove(file_path)
-            except:
-                pass
     
     return jsonify({'success': False, 'message': '不支持的文件类型'}), 400
 
@@ -295,16 +283,6 @@ def merge_pdf():
         # 构建PDF下载URL
         pdf_url = f"https://excel.sube.top/download/{pdf_name}"
         
-        # 清理上传的图片（仅删除通过uploads字典找到的图片）
-        for img_info in images:
-            if 'id' in img_info and img_info['id'] in uploads:
-                try:
-                    os.remove(img_info['path'])
-                    del uploads[img_info['id']]
-                except Exception as e:
-                    print(f"清理图片失败: {str(e)}")
-                    # 继续处理，不中断流程
-        
         # 返回结果
         result = {
             'success': True,
@@ -376,12 +354,119 @@ def pdf_to_word():
         
     except Exception as e:
         return jsonify({'success': False, 'message': f'转换失败: {str(e)}'}), 500
-    finally:
-        # 清理上传的PDF文件
-        try:
-            os.remove(pdf_path)
-        except:
-            pass
+
+# =============== MD转Word功能 ===============
+
+@app.route('/md-to-word', methods=['POST'])
+def md_to_word():
+    if 'md' not in request.files:
+        return jsonify({'success': False, 'message': '未找到Markdown文件'}), 400
+    
+    file = request.files['md']
+    if file.filename == '':
+        return jsonify({'success': False, 'message': '未选择文件'}), 400
+    
+    # 检查文件类型
+    if not file.filename.lower().endswith(('.md', '.markdown')):
+        return jsonify({'success': False, 'message': '请上传Markdown格式的文件'}), 400
+    
+    # 生成唯一文件名
+    filename = secure_filename(file.filename)
+    timestamp = int(time.time())
+    unique_id = f"{timestamp}_{uuid.uuid4().hex[:8]}"
+    md_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{unique_id}_{filename}")
+    file.save(md_path)
+    
+    try:
+        # 生成Word文件名
+        word_name = f"word_{unique_id}.docx"
+        word_path = os.path.join(app.config['OUTPUT_FOLDER'], word_name)
+        
+        # 使用python-docx将Markdown转换为Word
+        from markdown import markdown
+        from docx import Document
+        from docx.shared import Pt, Inches
+        from bs4 import BeautifulSoup
+
+        # 读取Markdown内容
+        with open(md_path, 'r', encoding='utf-8') as f:
+            md_content = f.read()
+        
+        # 将Markdown转换为HTML
+        html = markdown(md_content, extensions=['tables', 'fenced_code', 'codehilite'])
+        
+        # 使用BeautifulSoup解析HTML
+        soup = BeautifulSoup(html, 'html.parser')
+        
+        # 创建Word文档
+        doc = Document()
+        
+        # 设置文档页面边距
+        sections = doc.sections
+        for section in sections:
+            section.top_margin = Inches(1)
+            section.bottom_margin = Inches(1)
+            section.left_margin = Inches(1)
+            section.right_margin = Inches(1)
+        
+        # 处理HTML元素
+        for element in soup.find_all(['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'pre', 'table']):
+            if element.name.startswith('h'):
+                level = int(element.name[1])
+                heading = doc.add_heading(element.get_text(), level=level)
+            elif element.name == 'p':
+                p = doc.add_paragraph(element.get_text())
+            elif element.name == 'ul':
+                for li in element.find_all('li'):
+                    p = doc.add_paragraph(li.get_text(), style='List Bullet')
+            elif element.name == 'ol':
+                for li in element.find_all('li'):
+                    p = doc.add_paragraph(li.get_text(), style='List Number')
+            elif element.name == 'pre':
+                code = element.get_text()
+                p = doc.add_paragraph(code)
+                for run in p.runs:
+                    run.font.name = 'Courier New'
+                    run.font.size = Pt(10)
+            elif element.name == 'table':
+                rows = element.find_all('tr')
+                if rows:
+                    # 获取表格列数
+                    cols = max([len(row.find_all(['td', 'th'])) for row in rows])
+                    
+                    # 创建表格
+                    table = doc.add_table(rows=len(rows), cols=cols)
+                    table.style = 'Table Grid'
+                    
+                    # 填充表格
+                    for i, row in enumerate(rows):
+                        cells = row.find_all(['td', 'th'])
+                        for j, cell in enumerate(cells):
+                            if j < cols:  # 确保不越界
+                                table.cell(i, j).text = cell.get_text().strip()
+        
+        # 保存文档
+        doc.save(word_path)
+        
+        # 获取文件大小
+        file_size = os.path.getsize(word_path)
+        file_size_kb = round(file_size / 1024, 2)
+        
+        # 生成下载URL
+        word_url = f"https://excel.sube.top/download/{word_name}"
+        
+        # 返回结果
+        return jsonify({
+            'success': True,
+            'data': {
+                'wordUrl': word_url,
+                'fileSize': f"{file_size_kb}KB",
+                'fileName': word_name
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'转换失败: {str(e)}'}), 500
 
 # =============== 文件下载功能 ===============
 
@@ -456,18 +541,39 @@ def compare_text():
         # 使用difflib的SequenceMatcher进行字符级别的比较
         matcher = difflib.SequenceMatcher(None, text1, text2)
         
-        # 生成HTML格式的差异结果
-        html_diff = []
+        # 为并排显示准备数据
+        text1_formatted = []
+        text2_formatted = []
+        
+        # 优化处理连续的相同内容，合并为一个块
         for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            # 处理相同部分的显示
             if tag == 'equal':
-                html_diff.append(f'<span class="unchanged">{text1[i1:i2]}</span>')
+                # 如果内容少于2个字符并且不是空白符，则不单独显示
+                if i2 - i1 <= 2 and not text1[i1:i2].isspace():
+                    # 检查前后是否有内容
+                    if text1_formatted and text1_formatted[-1]['class'] == 'unchanged':
+                        text1_formatted[-1]['text'] += text1[i1:i2]
+                    else:
+                        text1_formatted.append({'text': text1[i1:i2], 'class': 'unchanged'})
+                    
+                    if text2_formatted and text2_formatted[-1]['class'] == 'unchanged':
+                        text2_formatted[-1]['text'] += text2[j1:j2]
+                    else:
+                        text2_formatted.append({'text': text2[j1:j2], 'class': 'unchanged'})
+                else:
+                    text1_formatted.append({'text': text1[i1:i2], 'class': 'unchanged'})
+                    text2_formatted.append({'text': text2[j1:j2], 'class': 'unchanged'})
+            # 处理删除部分
             elif tag == 'delete':
-                html_diff.append(f'<span class="removed">{text1[i1:i2]}</span>')
+                text1_formatted.append({'text': text1[i1:i2], 'class': 'removed'})
+            # 处理添加部分
             elif tag == 'insert':
-                html_diff.append(f'<span class="added">{text2[j1:j2]}</span>')
+                text2_formatted.append({'text': text2[j1:j2], 'class': 'added'})
+            # 处理替换部分
             elif tag == 'replace':
-                html_diff.append(f'<span class="removed">{text1[i1:i2]}</span>')
-                html_diff.append(f'<span class="added">{text2[j1:j2]}</span>')
+                text1_formatted.append({'text': text1[i1:i2], 'class': 'removed'})
+                text2_formatted.append({'text': text2[j1:j2], 'class': 'added'})
         
         # 计算统计数据
         similarity = round(matcher.ratio() * 100, 2)
@@ -475,354 +581,9 @@ def compare_text():
         removed_chars = sum(i2 - i1 for tag, i1, i2, j1, j2 in matcher.get_opcodes() if tag in ('delete', 'replace'))
         unchanged_chars = sum(i2 - i1 for tag, i1, i2, j1, j2 in matcher.get_opcodes() if tag == 'equal')
         total_chars = len(text1) + len(text2)
+        different_chars = added_chars + removed_chars
         
-        # 创建完整的HTML
-        full_html = f'''
-        <!DOCTYPE html>
-        <html lang="zh-CN">
-        <head>
-            <meta charset="utf-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1">
-            <title>文本比较结果</title>
-            <style>
-                * {{
-                    box-sizing: border-box;
-                    margin: 0;
-                    padding: 0;
-                }}
-                
-                body {{ 
-                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-                    margin: 0;
-                    padding: 0;
-                    line-height: 1.6;
-                    color: #333;
-                    background-color: #f8f9fa;
-                }}
-                
-                .container {{
-                    max-width: 1000px;
-                    margin: 0 auto;
-                    padding: 20px;
-                }}
-                
-                .header {{
-                    text-align: center;
-                    margin-bottom: 30px;
-                    padding-bottom: 20px;
-                    border-bottom: 1px solid #e0e0e0;
-                }}
-                
-                .header h1 {{
-                    font-size: 24px;
-                    font-weight: 600;
-                    color: #333;
-                    margin-bottom: 10px;
-                }}
-                
-                .header p {{
-                    color: #666;
-                    font-size: 16px;
-                }}
-                
-                .summary-card {{
-                    background-color: white;
-                    border-radius: 10px;
-                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                    margin-bottom: 30px;
-                    overflow: hidden;
-                }}
-                
-                .summary-header {{
-                    background-color: #f0f0f0;
-                    padding: 15px 20px;
-                    border-bottom: 1px solid #e0e0e0;
-                }}
-                
-                .summary-header h2 {{
-                    font-size: 18px;
-                    font-weight: 600;
-                    color: #333;
-                    margin: 0;
-                }}
-                
-                .summary-content {{
-                    padding: 20px;
-                }}
-                
-                .stats-grid {{
-                    display: grid;
-                    grid-template-columns: repeat(2, 1fr);
-                    gap: 20px;
-                }}
-                
-                .similarity-card {{
-                    grid-column: span 2;
-                    background: linear-gradient(135deg, #5b86e5, #36d1dc);
-                    border-radius: 8px;
-                    padding: 20px;
-                    text-align: center;
-                    color: white;
-                }}
-                
-                .similarity-value {{
-                    font-size: 36px;
-                    font-weight: bold;
-                    margin: 10px 0;
-                }}
-                
-                .stat-card {{
-                    background-color: #f9f9f9;
-                    border-radius: 8px;
-                    padding: 15px;
-                    text-align: center;
-                    border: 1px solid #eee;
-                }}
-                
-                .stat-card.added {{
-                    border-left: 4px solid #4CAF50;
-                }}
-                
-                .stat-card.removed {{
-                    border-left: 4px solid #F44336;
-                }}
-                
-                .stat-card.unchanged {{
-                    border-left: 4px solid #2196F3;
-                }}
-                
-                .stat-card h3 {{
-                    font-size: 14px;
-                    color: #666;
-                    margin-bottom: 10px;
-                    font-weight: 500;
-                }}
-                
-                .stat-value {{
-                    font-size: 24px;
-                    font-weight: bold;
-                }}
-                
-                .stat-value.added {{
-                    color: #4CAF50;
-                }}
-                
-                .stat-value.removed {{
-                    color: #F44336;
-                }}
-                
-                .stat-value.unchanged {{
-                    color: #2196F3;
-                }}
-                
-                .legend {{
-                    display: flex;
-                    justify-content: center;
-                    margin-bottom: 20px;
-                    flex-wrap: wrap;
-                    gap: 15px;
-                }}
-                
-                .legend-item {{
-                    display: flex;
-                    align-items: center;
-                    margin-right: 20px;
-                }}
-                
-                .legend-color {{
-                    width: 15px;
-                    height: 15px;
-                    border-radius: 3px;
-                    margin-right: 5px;
-                }}
-                
-                .legend-color.added {{
-                    background-color: #e6ffe6;
-                    border: 1px solid #4CAF50;
-                }}
-                
-                .legend-color.removed {{
-                    background-color: #ffe6e6;
-                    border: 1px solid #F44336;
-                }}
-                
-                .legend-color.unchanged {{
-                    background-color: #f0f8ff;
-                    border: 1px solid #2196F3;
-                }}
-                
-                .diff-card {{
-                    background-color: white;
-                    border-radius: 10px;
-                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-                    margin-bottom: 30px;
-                    overflow: hidden;
-                }}
-                
-                .diff-header {{
-                    background-color: #f0f0f0;
-                    padding: 15px 20px;
-                    border-bottom: 1px solid #e0e0e0;
-                }}
-                
-                .diff-header h2 {{
-                    font-size: 18px;
-                    font-weight: 600;
-                    color: #333;
-                    margin: 0;
-                }}
-                
-                .diff-content {{
-                    padding: 25px;
-                    white-space: pre-wrap;
-                    word-wrap: break-word;
-                    font-family: 'Source Code Pro', monospace;
-                    font-size: 16px;
-                    line-height: 1.8;
-                    background-color: #fafafa;
-                    border-radius: 0 0 10px 10px;
-                    overflow-x: auto;
-                }}
-                
-                .added {{ 
-                    background-color: #e6ffe6; 
-                    color: #006600; 
-                    padding: 2px 4px;
-                    border-radius: 3px;
-                    border: 1px solid #b3ffb3;
-                    margin: 0 1px;
-                }}
-                
-                .removed {{ 
-                    background-color: #ffe6e6; 
-                    color: #cc0000; 
-                    padding: 2px 4px;
-                    text-decoration: line-through;
-                    border-radius: 3px;
-                    border: 1px solid #ffb3b3;
-                    margin: 0 1px;
-                }}
-                
-                .unchanged {{ 
-                    color: #333;
-                }}
-                
-                .footer {{
-                    text-align: center;
-                    margin-top: 40px;
-                    color: #888;
-                    font-size: 14px;
-                    padding-top: 20px;
-                    border-top: 1px solid #e0e0e0;
-                }}
-                
-                @media (max-width: 768px) {{
-                    .container {{
-                        padding: 15px;
-                    }}
-                    
-                    .stats-grid {{
-                        grid-template-columns: 1fr;
-                    }}
-                    
-                    .similarity-card {{
-                        grid-column: span 1;
-                    }}
-                }}
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1>文本比较结果</h1>
-                    <p>详细展示两段文本之间的差异</p>
-                </div>
-                
-                <div class="summary-card">
-                    <div class="summary-header">
-                        <h2>比较摘要</h2>
-                    </div>
-                    <div class="summary-content">
-                        <div class="stats-grid">
-                            <div class="similarity-card">
-                                <h3>文本相似度</h3>
-                                <div class="similarity-value">{similarity}%</div>
-                            </div>
-                            
-                            <div class="stat-card added">
-                                <h3>新增字符</h3>
-                                <div class="stat-value added">{added_chars}</div>
-                            </div>
-                            
-                            <div class="stat-card removed">
-                                <h3>删除字符</h3>
-                                <div class="stat-value removed">{removed_chars}</div>
-                            </div>
-                            
-                            <div class="stat-card unchanged">
-                                <h3>相同字符</h3>
-                                <div class="stat-value unchanged">{unchanged_chars}</div>
-                            </div>
-                            
-                            <div class="stat-card">
-                                <h3>文本 1 长度</h3>
-                                <div class="stat-value">{len(text1)}</div>
-                            </div>
-                            
-                            <div class="stat-card">
-                                <h3>文本 2 长度</h3>
-                                <div class="stat-value">{len(text2)}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="legend">
-                    <div class="legend-item">
-                        <div class="legend-color added"></div>
-                        <span>新增文本</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color removed"></div>
-                        <span>删除文本</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color unchanged"></div>
-                        <span>相同文本</span>
-                    </div>
-                </div>
-                
-                <div class="diff-card">
-                    <div class="diff-header">
-                        <h2>详细对比</h2>
-                    </div>
-                    <div class="diff-content">
-                        {''.join(html_diff)}
-                    </div>
-                </div>
-                
-                <div class="footer">
-                    <p>由微信小程序「文本比较工具」生成</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        '''
-        
-        # 生成唯一的HTML文件名
-        timestamp = int(time.time())
-        unique_id = f"{timestamp}_{uuid.uuid4().hex[:8]}"
-        html_name = f"diff_{unique_id}.html"
-        html_path = os.path.join(app.config['OUTPUT_FOLDER'], html_name)
-        
-        # 保存HTML文件
-        with open(html_path, 'w', encoding='utf-8') as f:
-            f.write(full_html)
-        
-        # 生成下载URL
-        html_url = f"https://excel.sube.top/download/{html_name}"
-        
-        # 返回结果
+        # 直接返回结果，包含差异内容
         result = {
             'success': True,
             'data': {
@@ -830,8 +591,10 @@ def compare_text():
                 'added_chars': added_chars,
                 'removed_chars': removed_chars,
                 'unchanged_chars': unchanged_chars,
+                'different_chars': different_chars,
                 'total_chars': total_chars,
-                'resultUrl': html_url
+                'text1_formatted': text1_formatted,
+                'text2_formatted': text2_formatted
             }
         }
         
@@ -944,13 +707,6 @@ def compress_files():
         
         # 清理临时目录
         shutil.rmtree(temp_dir, ignore_errors=True)
-        
-        # 清理上传的文件
-        for file_id, file_info in compression_files.items():
-            try:
-                os.remove(file_info['path'])
-            except:
-                pass
         
         # 清空文件列表
         compression_files.clear()
@@ -1349,9 +1105,6 @@ def pdf_split():
             with zipfile.ZipFile(zip_path, 'w') as zipf:
                 for file in output_files:
                     zipf.write(file, os.path.basename(file))
-                    
-            # 删除临时文件夹
-            shutil.rmtree(output_dir)
             
             # 返回下载链接
             download_url = f"/download/{zip_filename}"
@@ -1397,8 +1150,78 @@ def ensure_temp_folder_exists():
     if not os.path.exists(app.config['UPLOAD_FOLDER']):
         os.makedirs(app.config['UPLOAD_FOLDER'])
 
+# 添加清理文件的函数
+def cleanup_files():
+    """定期清理超过5分钟的上传和输出文件"""
+    while True:
+        try:
+            print("开始清理临时文件...")
+            current_time = time.time()
+            timeout = 5 * 60  # 5分钟 (300秒)
+            
+            # 清理uploads目录
+            cleanup_directory(app.config['UPLOAD_FOLDER'], current_time, timeout)
+            
+            # 清理outputs目录
+            cleanup_directory(app.config['OUTPUT_FOLDER'], current_time, timeout)
+            
+            # 清理temp目录
+            cleanup_directory(app.config['TEMP_FOLDER'], current_time, timeout)
+            
+            print(f"文件清理完成，将在{timeout}秒后再次清理")
+        except Exception as e:
+            print(f"清理文件时出错: {str(e)}")
+        
+        # 等待5分钟再次执行
+        time.sleep(timeout)
+
+def cleanup_directory(directory, current_time, timeout):
+    """清理指定目录中超时的文件"""
+    if not os.path.exists(directory):
+        return
+    
+    count = 0
+    for filename in os.listdir(directory):
+        file_path = os.path.join(directory, filename)
+        
+        # 跳过目录
+        if os.path.isdir(file_path):
+            # 只清理temp_开头的临时目录
+            if filename.startswith('temp_'):
+                try:
+                    # 获取目录修改时间
+                    modified_time = os.path.getmtime(file_path)
+                    if current_time - modified_time > timeout:
+                        shutil.rmtree(file_path, ignore_errors=True)
+                        count += 1
+                        print(f"已删除临时目录: {filename}")
+                except Exception as e:
+                    print(f"删除目录 {filename} 出错: {str(e)}")
+            continue
+        
+        try:
+            # 获取文件修改时间
+            modified_time = os.path.getmtime(file_path)
+            
+            # 如果文件修改时间超过timeout秒，则删除
+            if current_time - modified_time > timeout:
+                os.remove(file_path)
+                count += 1
+        except Exception as e:
+            print(f"处理文件 {filename} 时出错: {str(e)}")
+    
+    if count > 0:
+        print(f"从 {directory} 删除了 {count} 个过期文件")
+
+# 启动清理线程
+def start_cleanup_thread():
+    cleanup_thread = threading.Thread(target=cleanup_files, daemon=True)
+    cleanup_thread.start()
+    print("文件自动清理线程已启动，文件生命周期为5分钟")
+
 # 在应用启动前直接调用
 ensure_temp_folder_exists()
+start_cleanup_thread()
 
 # =============== 启动服务 ===============
 

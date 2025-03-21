@@ -4,6 +4,7 @@
         "pages/tools/imageToExcel/imageToExcel",
         "pages/tools/imageToPdf/imageToPdf",
         "pages/tools/pdfToWord/pdfToWord",
+        "pages/tools/mdToWord/mdToWord",
         "pages/tools/pdfSplitMerge/pdfSplitMerge",
         "pages/tools/textCompare/textCompare",
         "pages/tools/fileCompression/fileCompression",

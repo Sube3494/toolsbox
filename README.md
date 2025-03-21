@@ -13,6 +13,7 @@
 - **文本比较工具**：对比两段文本，精确到字符级别的差异展示
 - **文件压缩工具**：将多个文件压缩打包为ZIP或7Z格式
 - **批量重命名与打包**：选择多个文件，批量重命名后打包下载
+- **Markdown转Word**：将Markdown文档转换为Word格式
 
 ## 项目结构
 
@@ -24,8 +25,20 @@
 ├── requirements.txt        // Python依赖包列表
 ├── start.sh                // 服务启动脚本
 ├── nginx.conf              // Nginx配置示例
+├── 服务器故障排除指南.md     // 服务器故障排查指南
+├── 微信小程序真机启动问题排查.md // 小程序故障排查指南
+├── 域名配置说明.md          // 域名配置说明文档
 ├── images                  // 图片资源文件夹
 │   ├── icons               // 工具图标存放目录
+│       ├── batchRename.svg // 批量重命名工具图标
+│       ├── fileCompression.svg // 文件压缩工具图标
+│       ├── imageToExcel.svg   // 图片转Excel工具图标
+│       ├── imageToPdf.svg     // 图片转PDF工具图标
+│       ├── mdToWord.svg       // Markdown转Word工具图标
+│       ├── pdfSplitMerge.svg  // PDF拆分合并工具图标
+│       ├── pdfToWord.svg      // PDF转Word工具图标
+│       ├── textCompare.svg    // 文本比较工具图标
+│       ├── tool_icon.svg      // 通用工具图标
 ├── pages                   // 页面文件夹
 │   ├── index               // 首页
 │   │   ├── index.js       
@@ -35,6 +48,10 @@
 │   │   ├── webview.js
 │   │   ├── webview.wxml
 │   │   └── webview.wxss
+│   ├── batchRename         // 批量重命名页面
+│   │   ├── batchRename.js
+│   │   ├── batchRename.wxml
+│   │   └── batchRename.wxss
 │   └── tools               // 工具页面
 │       ├── imageToExcel    // 图片转Excel工具
 │       │   ├── imageToExcel.js
@@ -60,11 +77,16 @@
 │       │   ├── fileCompression.js
 │       │   ├── fileCompression.wxml
 │       │   └── fileCompression.wxss
+│       ├── mdToWord        // Markdown转Word工具
+│       │   ├── mdToWord.js
+│       │   ├── mdToWord.wxml
+│       │   └── mdToWord.wxss
 │       └── batchRename     // 批量重命名与打包工具
 │           ├── batchRename.js
 │           ├── batchRename.wxml
 │           └── batchRename.wxss
 ├── project.config.json     // 项目配置文件
+├── project.private.config.json // 项目私有配置
 └── sitemap.json            // 小程序索引配置
 ```
 
@@ -83,7 +105,8 @@
 - PyPDF2用于PDF处理
 - pdf2docx用于PDF转Word
 - difflib用于文本比较算法
-- zipfile用于文件压缩和打包
+- zipfile和py7zr用于文件压缩和打包
+- markdown和python-docx用于Markdown转Word
 
 ## 功能详解
 
@@ -133,6 +156,13 @@
 - 支持统一修改文件扩展名
 - 将重命名后的文件打包为ZIP格式下载
 
+### 8. Markdown转Word
+- 上传Markdown文档
+- 自动转换为可编辑的Word文件
+- 保留标题、列表、代码块等Markdown格式
+- 支持表格、标题层级等复杂元素转换
+- 提供转换后文件下载
+
 ## 部署指南
 
 ### 后端部署
@@ -146,9 +176,9 @@
 
 2. **准备目录**
 
-   创建上传和输出目录：
+   创建上传、输出和临时目录：
    ```bash
-   mkdir -p uploads outputs
+   mkdir -p uploads outputs temp
    ```
 
 3. **配置Nginx**
@@ -172,9 +202,10 @@
 
 4. **启动服务**
 
-   使用启动脚本：
+   修改start.sh脚本权限并启动：
    ```bash
-   bash start.sh
+   chmod +x start.sh
+   ./start.sh
    ```
    
    或直接启动Python应用：
@@ -182,9 +213,86 @@
    nohup python app.py > app.log 2>&1 &
    ```
 
-5. **重启Nginx**
+5. **使用Gunicorn启动（推荐）**
+
+   ```bash
+   gunicorn -w 4 -b 0.0.0.0:5000 app:app --timeout 120
+   ```
+
+6. **重启Nginx**
    ```bash
    sudo systemctl restart nginx
+   ```
+
+### 配置系统自启动
+
+#### 方法一：使用Systemd（推荐）
+
+1. **创建服务文件**
+
+   创建文件 `/etc/systemd/system/toolsbox.service`:
+   
+   ```ini
+   [Unit]
+   Description=ToolsBox Flask服务
+   After=network.target
+
+   [Service]
+   User=www-data  # 或者您的用户名
+   WorkingDirectory=/path/to/your/app  # 改为实际路径
+   ExecStart=/path/to/your/app/start.sh
+   Restart=always
+   RestartSec=5
+   StandardOutput=append:/var/log/toolsbox.log
+   StandardError=append:/var/log/toolsbox.err
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+
+2. **启用服务**
+
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl enable toolsbox.service
+   sudo systemctl start toolsbox.service
+   ```
+
+3. **查看服务状态**
+
+   ```bash
+   sudo systemctl status toolsbox.service
+   ```
+
+#### 方法二：使用Supervisor
+
+1. **安装Supervisor**
+
+   ```bash
+   sudo apt-get install supervisor
+   ```
+
+2. **创建配置文件**
+
+   创建文件 `/etc/supervisor/conf.d/toolsbox.conf`:
+   
+   ```ini
+   [program:toolsbox]
+   directory=/path/to/your/app  ; 改为实际路径
+   command=/path/to/your/app/start.sh
+   autostart=true
+   autorestart=true
+   stderr_logfile=/var/log/toolsbox.err.log
+   stdout_logfile=/var/log/toolsbox.out.log
+   user=www-data  ; 或者您的用户名
+   ```
+
+3. **启动服务**
+
+   ```bash
+   sudo supervisorctl reread
+   sudo supervisorctl update
+   sudo supervisorctl start toolsbox
    ```
 
 ### 小程序部署
@@ -205,10 +313,42 @@
 4. **域名配置**
    - 在微信公众平台-开发-开发设置中
    - 添加服务器域名到"request合法域名"列表
+   - 查看 `域名配置说明.md` 获取更多详细信息
 
 5. **上传发布**
    - 在开发者工具中点击"上传"
    - 在微信公众平台提交审核发布
+
+## 服务器维护
+
+### 日志查看
+
+查看应用日志：
+```bash
+tail -f app.log
+```
+
+查看Nginx错误日志：
+```bash
+sudo tail -f /var/log/nginx/error.log
+```
+
+### 故障排除
+
+如遇502错误，请参考 `服务器故障排除指南.md` 文件进行排查。
+
+如小程序启动问题，请参考 `微信小程序真机启动问题排查.md` 文件。
+
+### 服务重启
+
+重启Flask应用：
+```bash
+# 如果使用systemd
+sudo systemctl restart toolsbox.service
+
+# 如果使用supervisor
+sudo supervisorctl restart toolsbox
+```
 
 ## 注意事项
 
@@ -217,10 +357,13 @@
 - 文本比较功能适用于短到中等长度的文本，过长的文本可能影响性能
 - 后端服务需要配置足够的内存以支持图像处理和OCR功能
 - 批量重命名功能对文件数量有限制，建议一次处理不超过50个文件
+- 默认配置下，所有上传和生成的文件都会在5分钟后自动清理
 
 ## 更新日志
 
 ### 2025-03-21
+- 添加Markdown转Word功能，支持将Markdown文档转换为Word格式
+- 为Markdown转Word功能添加对应的mdToWord.svg图标
 - 移除所有工具页面中的调试信息区域，使界面更加简洁
 - 优化各功能页面的提示信息，增强用户体验
 - 修复网络连接检测功能，增加断网提示
@@ -229,6 +372,8 @@
 - 为PDF拆分合并功能添加对应图标
 - 优化PDF操作相关功能的处理逻辑
 - 修复大型PDF文件处理时的内存占用问题
+- 添加服务器故障排除指南和微信小程序问题排查指南
+- 添加全局文件清理功能，自动删除超过5分钟的临时文件
 
 ### 2025-03-20
 - 添加批量重命名与打包功能，支持多文件批量重命名和打包下载

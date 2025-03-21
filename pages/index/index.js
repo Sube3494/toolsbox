@@ -38,6 +38,13 @@ Page({
                 path: '/pages/tools/pdfSplitMerge/pdfSplitMerge'
             },
             {
+                id: 'mdToWord',
+                name: 'Markdown转Word',
+                icon: '/images/icons/mdToWord.svg', // 改为本地文件路径
+                description: '将Markdown文档转换为可编辑的Word文件',
+                path: '/pages/tools/mdToWord/mdToWord'
+            },
+            {
                 id: 'textCompare',
                 name: '文本比较工具',
                 icon: '/images/icons/textCompare.svg', // 改为本地文件路径

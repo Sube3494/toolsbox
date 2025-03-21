@@ -92,21 +92,5 @@ Page({
         });
       }
     });
-  },
-
-  // 查看详细对比
-  viewDiff: function () {
-    if (!this.data.result || !this.data.result.resultUrl) {
-      wx.showToast({
-        title: '没有比较结果',
-        icon: 'none'
-      });
-      return;
-    }
-
-    // 使用web-view打开结果页面
-    wx.navigateTo({
-      url: `/pages/webview/webview?url=${encodeURIComponent(this.data.result.resultUrl)}`
-    });
   }
 }) 

@@ -25,33 +25,50 @@
       </view>
       <view class="result-stats">
         <view class="stats-row">
-          <view class="stats-label">新增字符:</view>
-          <view class="stats-value added-count">{{result.added_chars}}</view>
+          <view class="stats-label">差异字符:</view>
+          <view class="stats-value different-count">
+            {{result.different_chars || (result.added_chars + result.removed_chars)}}
+          </view>
         </view>
         <view class="stats-row">
-          <view class="stats-label">删除字符:</view>
-          <view class="stats-value removed-count">{{result.removed_chars}}</view>
-        </view>
-        <view class="stats-row">
-          <view class="stats-label">相同字符:</view>
+          <view class="stats-label">正常字符:</view>
           <view class="stats-value unchanged-count">{{result.unchanged_chars}}</view>
         </view>
       </view>
       <view class="result-legend">
         <view class="legend-item">
-          <view class="color-block added"></view>
-          <text>新增</text>
-        </view>
-        <view class="legend-item">
-          <view class="color-block removed"></view>
-          <text>删除</text>
-        </view>
-        <view class="legend-item">
-          <view class="color-block unchanged"></view>
-          <text>未变</text>
+          <view class="color-block different"></view>
+          <text>差异部分</text>
         </view>
       </view>
-      <button class="btn-primary view-button" bindtap="viewDiff">查看详细对比</button>
+      <!-- 上下显示两段文本的差异 -->
+      <view class="detail-title">详细对比结果</view>
+      <view class="vertical-container">
+        <view class="text-section">
+          <view class="column-title">原始文本</view>
+          <view class="text-content">
+            <view class="text-line-container">
+              <block wx:for="{{result.text1_formatted}}" wx:key="index">
+                <text class="text-segment {{item.class == 'removed' ? 'different' : item.class}}">
+                  {{item.text}}
+                </text>
+              </block>
+            </view>
+          </view>
+        </view>
+        <view class="text-section">
+          <view class="column-title">对比文本</view>
+          <view class="text-content">
+            <view class="text-line-container">
+              <block wx:for="{{result.text2_formatted}}" wx:key="index">
+                <text class="text-segment {{item.class == 'added' ? 'different' : item.class}}">
+                  {{item.text}}
+                </text>
+              </block>
+            </view>
+          </view>
+        </view>
+      </view>
     </view>
   </view>
   <view class="tips card">
@@ -60,7 +77,7 @@
       <view class="tips-item">1. 支持较长文本的比较</view>
       <view class="tips-item">2. 比较结果精确到每个字符</view>
       <view class="tips-item">3. 文本长度无限制，但过长可能影响性能</view>
-      <view class="tips-item">4. 点击查看详细对比可查看完整差异内容</view>
+      <view class="tips-item">4. 黄色背景标记差异部分，正常文本表示相同内容</view>
     </view>
   </view>
 </view>
