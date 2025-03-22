@@ -64,6 +64,13 @@ Page({
                 icon: '/images/icons/batchRename.svg', // 改为本地文件路径
                 description: '选择文件批量重命名并打包下载',
                 path: '/pages/tools/batchRename/batchRename'
+            },
+            {
+                id: 'handheldDanmaku',
+                name: '手持弹幕工具',
+                icon: '/images/icons/handheldDanmaku.svg',
+                description: '创建自定义弹幕，支持多种样式和效果',
+                path: '/pages/tools/handheldDanmaku/handheldDanmaku'
             }
             // 未来可以在这里添加更多工具
         ],

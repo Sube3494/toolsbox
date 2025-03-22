@@ -1,0 +1,122 @@
+<!-- pages/tools/handheldDanmaku/handheldDanmaku.wxml -->
+<view class="container">
+    <view class="header">
+        <input class="danmaku-input" placeholder="输入弹幕内容" bindinput="onDanmakuContentChange" value="{{danmakuContent}}" />
+    </view>
+    <!-- 弹幕预览区 -->
+    <view class="danmaku-preview" style="background: {{backgroundColor}};">
+        <text style="color: {{textColor}}; font-size: {{fontSize}}rpx;" class="{{isVertical ? 'danmaku-vertical' : ''}}">
+            {{danmakuContent || '弹幕预览'}}
+        </text>
+    </view>
+    <!-- 功能区 -->
+    <view class="functions">
+        <!-- 显示方向选项 -->
+        <view class="option-group">
+            <view class="option-title">显示方向</view>
+            <view class="options">
+                <view class="option-btn {{!isVertical ? 'active' : ''}}" bindtap="onOrientationChange" data-orientation="horizontal">
+                    横向
+                </view>
+                <view class="option-btn {{isVertical ? 'active' : ''}}" bindtap="onOrientationChange" data-orientation="vertical">
+                    竖向
+                </view>
+            </view>
+        </view>
+        <!-- 弹幕类型选项 -->
+        <view class="option-group">
+            <view class="option-title">弹幕类型</view>
+            <view class="options">
+                <view class="option-btn {{!isStationary ? 'active' : ''}}" bindtap="onTypeChange" data-type="scrolling">
+                    滚动弹幕
+                </view>
+                <view class="option-btn {{isStationary ? 'active' : ''}}" bindtap="onTypeChange" data-type="stationary">
+                    固定弹幕
+                </view>
+            </view>
+        </view>
+        <!-- 字体大小 -->
+        <view class="option-group">
+            <view class="option-title">字体大小</view>
+            <view class="slider-container">
+                <view class="slider-label">
+                    <text>小</text>
+                    <text>大</text>
+                </view>
+                <slider min="20" max="100" step="1" value="{{fontSize}}" bindchange="onFontSizeChange" activeColor="#4CAF50" backgroundColor="#e0e0e0" block-size="20" />
+            </view>
+        </view>
+        <!-- 滚动速度 (仅滚动模式) -->
+        <view class="option-group" wx:if="{{!isStationary}}">
+            <view class="option-title">滚动速度</view>
+            <view class="slider-container">
+                <view class="slider-label">
+                    <text>慢</text>
+                    <text>快</text>
+                </view>
+                <slider min="1" max="30" step="1" value="{{scrollSpeedValue}}" bindchange="onScrollSpeedChange" activeColor="#4CAF50" backgroundColor="#e0e0e0" block-size="20" />
+            </view>
+        </view>
+        <!-- 背景设置 -->
+        <view class="option-group">
+            <view class="option-title">背景样式</view>
+            <view class="options">
+                <view class="bg-preset {{currentBgPreset === 'default' ? 'active' : ''}}" style="background: linear-gradient(to right, #ff9a9e, #fad0c4);" bindtap="onBgPresetSelect" data-preset="default" data-bg="linear-gradient(to right, #ff9a9e, #fad0c4)" data-text="#ffffff">
+                    默认
+                </view>
+                <view class="bg-preset {{currentBgPreset === 'dark' ? 'active' : ''}}" style="background: #000000;" bindtap="onBgPresetSelect" data-preset="dark" data-bg="#000000" data-text="#ffffff">
+                    黑色
+                </view>
+                <view class="bg-preset {{currentBgPreset === 'blue' ? 'active' : ''}}" style="background: linear-gradient(120deg, #a1c4fd, #c2e9fb);" bindtap="onBgPresetSelect" data-preset="blue" data-bg="linear-gradient(120deg, #a1c4fd, #c2e9fb)" data-text="#333333">
+                    蓝色
+                </view>
+                <view class="bg-preset {{currentBgPreset === 'green' ? 'active' : ''}}" style="background: linear-gradient(120deg, #d4fc79, #96e6a1);" bindtap="onBgPresetSelect" data-preset="green" data-bg="linear-gradient(120deg, #d4fc79, #96e6a1)" data-text="#333333">
+                    绿色
+                </view>
+                <view class="bg-preset {{currentBgPreset === 'custom' ? 'active' : ''}}" style="background: #f5f5f5; color: #333;" bindtap="onBgPresetSelect" data-preset="custom">
+                    自定义
+                </view>
+            </view>
+        </view>
+        <!-- 颜色设置 -->
+        <view class="option-group">
+            <view class="option-title">文字颜色</view>
+            <view class="color-options">
+                <view class="color-option {{textColor === '#ffffff' ? 'active' : ''}}" style="background-color: #ffffff;" bindtap="onTextColorSelect" data-color="#ffffff"></view>
+                <view class="color-option {{textColor === '#ff0000' ? 'active' : ''}}" style="background-color: #ff0000;" bindtap="onTextColorSelect" data-color="#ff0000"></view>
+                <view class="color-option {{textColor === '#00ff00' ? 'active' : ''}}" style="background-color: #00ff00;" bindtap="onTextColorSelect" data-color="#00ff00"></view>
+                <view class="color-option {{textColor === '#0000ff' ? 'active' : ''}}" style="background-color: #0000ff;" bindtap="onTextColorSelect" data-color="#0000ff"></view>
+                <view class="color-option {{textColor === '#ffff00' ? 'active' : ''}}" style="background-color: #ffff00;" bindtap="onTextColorSelect" data-color="#ffff00"></view>
+                <view class="color-option {{textColor === '#00ffff' ? 'active' : ''}}" style="background-color: #00ffff;" bindtap="onTextColorSelect" data-color="#00ffff"></view>
+                <view class="color-option {{textColor === '#ff00ff' ? 'active' : ''}}" style="background-color: #ff00ff;" bindtap="onTextColorSelect" data-color="#ff00ff"></view>
+                <view class="color-option {{textColor === '#ff9900' ? 'active' : ''}}" style="background-color: #ff9900;" bindtap="onTextColorSelect" data-color="#ff9900"></view>
+            </view>
+        </view>
+    </view>
+    <!-- 底部操作区 -->
+    <view class="action-area">
+        <view class="generate-btn {{canGenerate ? '' : 'disabled'}}" bindtap="generateDanmaku">
+            全屏显示
+        </view>
+        <view class="reset-btn" bindtap="resetDanmaku">重置</view>
+    </view>
+    <!-- 全屏弹幕容器 -->
+    <view class="fullscreen-container" wx:if="{{showFullscreen}}" bindtap="exitFullscreen" style="background: {{backgroundColor}};">
+        <!-- 横屏滚动弹幕 -->
+        <view wx:if="{{!isVertical && !isStationary}}" style="position: absolute; white-space: nowrap; color: {{textColor}}; font-size: {{landscapeFontSize}}px; font-weight: bold; top: 50%; transform: translateY(-50%); left: 100%; animation: to-left {{scrollSpeed}}s linear 1; text-shadow: 0 0 8px rgba(0,0,0,0.8);">
+            {{danmakuContent}}
+        </view>
+        <!-- 竖屏滚动弹幕 -->
+        <view wx:elif="{{isVertical && !isStationary}}" style="position: absolute; white-space: nowrap; color: {{textColor}}; font-size: {{fullscreenFontSize}}px; writing-mode: vertical-rl; text-orientation: upright; left: 50%; transform: translateX(-50%); top: 100%; animation: to-top {{scrollSpeed}}s linear 1; text-shadow: 0 0 8px rgba(0,0,0,0.8);">
+            {{danmakuContent}}
+        </view>
+        <!-- 固定弹幕 -->
+        <view wx:else style="position: fixed; color: {{textColor}}; font-size: {{isVertical ? fullscreenFontSize : landscapeFontSize}}px; text-align: center; width: 100%; top: 50%; left: 50%; transform: translate(-50%, -50%); text-shadow: 0 0 8px rgba(0,0,0,0.8); writing-mode: {{isVertical ? 'vertical-rl' : 'horizontal-tb'}};">
+            {{danmakuContent}}
+        </view>
+        <!-- 退出提示 -->
+        <view style="position: fixed; bottom: 20px; left: 0; right: 0; text-align: center; color: rgba(255,255,255,0.8); font-size: 14px; padding: 8px; background-color: rgba(0,0,0,0.2); border-radius: 4px; width: 80%; margin: 0 auto; z-index: 1001;">
+            点击屏幕退出全屏
+        </view>
+    </view>
+</view>

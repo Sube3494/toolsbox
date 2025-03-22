@@ -9,6 +9,7 @@
         "pages/tools/textCompare/textCompare",
         "pages/tools/fileCompression/fileCompression",
         "pages/tools/batchRename/batchRename",
+        "pages/tools/handheldDanmaku/handheldDanmaku",
         "pages/webview/webview"
     ],
     "window": {

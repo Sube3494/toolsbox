@@ -1,0 +1,667 @@
+/* pages/tools/handheldDanmaku/handheldDanmaku.wxss */
+.header {
+    width: 100%;
+    padding: 30rpx 0;
+    text-align: center;
+}
+
+.title {
+    font-size: 40rpx;
+    font-weight: bold;
+    color: #333;
+}
+
+.subtitle {
+    font-size: 28rpx;
+    color: #999;
+    margin-top: 10rpx;
+}
+
+.tool-content {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.info-text {
+    font-size: 28rpx;
+    color: #666;
+    text-align: center;
+    margin-bottom: 30rpx;
+}
+
+.section-title {
+    width: 100%;
+    font-size: 30rpx;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 10rpx;
+}
+
+.text-input {
+    width: 100%;
+    height: 120rpx;
+    background-color: #f9f9f9;
+    border: 1px solid #e0e0e0;
+    border-radius: 10rpx;
+    padding: 20rpx;
+    margin-bottom: 30rpx;
+    box-sizing: border-box;
+    font-size: 28rpx;
+}
+
+/* 预览区域 */
+.preview-container {
+    width: 100%;
+    height: 200rpx;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 30rpx;
+    background-color: #f0f0f0;
+    border-radius: 10rpx;
+    overflow: hidden;
+    position: relative;
+}
+
+.preview-container.vertical {
+    width: 200rpx;
+    height: 300rpx;
+    margin: 0 auto 30rpx;
+}
+
+.danmaku-preview {
+    padding: 10px;
+    border-radius: 8px;
+    margin: 20px 0;
+    min-height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+    position: relative;
+}
+
+/* 动画相关样式 */
+.horizontal.scrolling .danmaku-preview,
+.fullscreen-danmaku .horizontal.scrolling {
+    animation: scrollLeft linear infinite;
+    animation-duration: inherit;
+}
+
+.vertical.scrolling .danmaku-preview,
+.fullscreen-danmaku .vertical.scrolling {
+    animation: scrollTop linear infinite;
+    animation-duration: inherit;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+}
+
+.vertical.stationary .danmaku-preview,
+.fullscreen-danmaku .vertical.stationary {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+}
+
+@keyframes scrollLeft {
+    0% {
+        transform: translateX(100vw);
+    }
+
+    100% {
+        transform: translateX(-100vw);
+    }
+}
+
+@keyframes scrollTop {
+    0% {
+        transform: translateY(100vh);
+    }
+
+    100% {
+        transform: translateY(-100vh);
+    }
+}
+
+/* 设置区域 */
+.settings-container {
+    width: 100%;
+    margin-bottom: 30rpx;
+}
+
+.setting-item {
+    margin-bottom: 20rpx;
+}
+
+.setting-label {
+    font-size: 28rpx;
+    color: #333;
+    margin-bottom: 10rpx;
+}
+
+/* 背景预设 */
+.bg-preset-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15rpx;
+    margin-bottom: 15rpx;
+}
+
+.bg-preset {
+    width: 60px;
+    height: 25px;
+    margin: 5px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 12px;
+    border: 1px solid #ddd;
+}
+
+.bg-preset.active {
+    border: 2px solid #4CAF50;
+}
+
+/* 颜色选择器 */
+.color-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15rpx;
+    margin-bottom: 20rpx;
+}
+
+.color-option {
+    width: 30px;
+    height: 30px;
+    margin: 5px;
+    border-radius: 50%;
+    border: 1px solid #ddd;
+}
+
+.color-option.active {
+    border: 2px solid #4CAF50;
+}
+
+/* 切换选项 */
+.toggle-container {
+    display: flex;
+    border: 1px solid #e0e0e0;
+    border-radius: 10rpx;
+    overflow: hidden;
+}
+
+.toggle-option {
+    flex: 1;
+    text-align: center;
+    padding: 15rpx 0;
+    font-size: 28rpx;
+    color: #666;
+    background-color: #f9f9f9;
+}
+
+.toggle-option.active {
+    color: #fff;
+    background-color: #4a8af4;
+    font-weight: 500;
+}
+
+/* 按钮组 */
+.button-group {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    margin: 20rpx 0;
+}
+
+.btn-primary {
+    flex: 1;
+    margin: 0 10rpx;
+    height: 80rpx;
+    line-height: 80rpx;
+    font-size: 30rpx;
+    border-radius: 10rpx;
+}
+
+.clear-button {
+    background-color: #f5f5f5 !important;
+    color: #666 !important;
+    border: 1px solid #e0e0e0;
+}
+
+.generate-button {
+    background-color: #4a8af4 !important;
+    color: #fff !important;
+}
+
+.generate-button[disabled] {
+    background-color: #cccccc !important;
+    color: #999 !important;
+}
+
+/* 全屏弹幕容器 */
+.fullscreen-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    background-color: black;
+}
+
+/* 弹幕包装器 - 用于定位 */
+.fullscreen-wrapper {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* 强调横屏模式的弹幕容器 */
+.fullscreen-wrapper.landscape {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    z-index: 1000;
+}
+
+/* 横屏内容区 */
+.landscape-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+/* 直接针对横屏弹幕文本 */
+.fullscreen-danmaku.landscape {
+    position: absolute;
+    font-weight: bold;
+    white-space: nowrap;
+    color: white;
+    left: 100vw;
+    top: 50%;
+    transform: translateY(-50%);
+    animation-name: landscape-scroll;
+    animation-timing-function: linear;
+    animation-iteration-count: 1;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+/* 横屏滚动动画定义 */
+@keyframes landscape-scroll {
+    from {
+        left: 100vw;
+    }
+
+    to {
+        left: -100vw;
+    }
+}
+
+/* 竖向模式的弹幕样式 */
+.fullscreen-danmaku.vertical {
+    position: absolute;
+    color: #fff;
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    white-space: nowrap;
+    top: 110%;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: scrollUp linear forwards;
+}
+
+@keyframes scrollUp {
+    from {
+        top: 110%;
+    }
+
+    to {
+        top: -110%;
+    }
+}
+
+/* 固定模式的弹幕 */
+.fixed-danmaku {
+    position: fixed;
+    color: #fff;
+    font-weight: bold;
+    text-align: center;
+    width: 100%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /* 确保文字横向显示 */
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed;
+}
+
+/* 真实横屏状态下显示更大的退出提示 */
+.fullscreen-wrapper.landscape+.exit-hint {
+    font-size: 16px;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 10px;
+    border-radius: 8px;
+    bottom: 30px;
+}
+
+/* 横屏模式下的退出提示 */
+.fullscreen-wrapper.landscape+.exit-hint {
+    transform: rotate(-90deg);
+    width: 40%;
+}
+
+/* 淡入淡出动画 */
+@keyframes fade {
+
+    0%,
+    100% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* 功能区 */
+.functions {
+    margin-top: 15px;
+}
+
+/* 选项卡 */
+.tab-container {
+    display: flex;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.tab {
+    padding: 8px 15px;
+    margin-right: 5px;
+    border-radius: 8px 8px 0 0;
+    background-color: #f5f5f5;
+}
+
+.tab.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+/* 选项组 */
+.option-group {
+    margin-bottom: 15px;
+}
+
+.option-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #333;
+}
+
+.options {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.option-btn {
+    padding: 5px 10px;
+    margin: 5px;
+    border-radius: 15px;
+    background-color: #f5f5f5;
+    font-size: 14px;
+}
+
+.option-btn.active {
+    background-color: #4CAF50;
+    color: white;
+}
+
+/* 颜色选择器 */
+.color-options {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.color-option {
+    width: 30px;
+    height: 30px;
+    margin: 5px;
+    border-radius: 50%;
+    border: 1px solid #ddd;
+}
+
+.color-option.active {
+    border: 2px solid #4CAF50;
+}
+
+/* 背景色预设选择 */
+.bg-preset {
+    width: 60px;
+    height: 25px;
+    margin: 5px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 12px;
+    border: 1px solid #ddd;
+}
+
+.bg-preset.active {
+    border: 2px solid #4CAF50;
+}
+
+/* 滑块容器 */
+.slider-container {
+    margin: 10px 0;
+}
+
+.slider-label {
+    display: flex;
+    justify-content: space-between;
+    color: #666;
+    font-size: 12px;
+    margin-bottom: 5px;
+}
+
+/* 底部操作区 */
+.action-area {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+}
+
+.generate-btn {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 5px;
+    flex: 1;
+    text-align: center;
+}
+
+.reset-btn {
+    background-color: #f5f5f5;
+    color: #666;
+    padding: 10px 15px;
+    border-radius: 5px;
+    margin-left: 10px;
+    text-align: center;
+}
+
+.generate-btn.disabled {
+    background-color: #cccccc;
+    color: #666;
+}
+
+/* 提示信息 */
+.tips {
+    width: 100%;
+    margin-top: 20rpx;
+}
+
+.tips-title {
+    font-size: 32rpx;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 15rpx;
+}
+
+.tips-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.tips-item {
+    font-size: 28rpx;
+    color: #666;
+    line-height: 1.6;
+    margin-bottom: 10rpx;
+}
+
+/* 卡片样式 */
+.card {
+    background-color: #fff;
+    border-radius: 15rpx;
+    padding: 30rpx;
+    margin-bottom: 20rpx;
+    box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+}
+
+/* 根据预览容器样式调整弹幕预览 */
+.fullscreen-danmaku .danmaku-preview {
+    padding: 10rpx 40rpx;
+    border-radius: 15rpx;
+    white-space: nowrap;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.2);
+    text-shadow: 0 2rpx 5rpx rgba(0, 0, 0, 0.3);
+}
+
+/* 纯文字弹幕样式 */
+.fullscreen-danmaku {
+    position: absolute;
+    white-space: nowrap;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+    overflow: visible;
+    padding: 0;
+    margin: 0;
+    display: inline-block;
+    text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+/* 竖屏全屏模式的弹幕 */
+.fullscreen-danmaku.vertical {
+    writing-mode: vertical-rl;
+    text-orientation: upright;
+    animation-name: scrollVertical;
+}
+
+/* 静止弹幕 */
+.fullscreen-danmaku.stationary {
+    animation: none !important;
+    position: absolute;
+    left: 50% !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    text-align: center;
+    width: auto;
+    text-shadow: 0 0 8px rgba(0, 0, 0, 0.9);
+}
+
+/* 竖屏滚动动画 - 从上到下 */
+@keyframes scrollVertical {
+    from {
+        transform: translateY(-100vh);
+    }
+
+    to {
+        transform: translateY(100vh);
+    }
+}
+
+/* 添加缺失的退出提示样式 */
+.exit-hint {
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 14px;
+    padding: 8px;
+    z-index: 1001;
+    animation: fade 2s infinite;
+    text-shadow: 0 0 4px rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    width: 80%;
+    margin: 0 auto;
+}
+
+/* 横屏模式下的退出提示 */
+.exit-hint.landscape-hint {
+    transform: rotate(0deg);
+    bottom: 20px;
+}
+
+/* 淡入淡出动画 */
+@keyframes fade {
+
+    0%,
+    100% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+/* 只定义动画，其他都使用内联样式 */
+@keyframes to-left {
+    from {
+        left: 100%;
+    }
+
+    to {
+        left: -100%;
+    }
+}
+
+@keyframes to-top {
+    from {
+        top: 100%;
+    }
+
+    to {
+        top: -100%;
+    }
+}
